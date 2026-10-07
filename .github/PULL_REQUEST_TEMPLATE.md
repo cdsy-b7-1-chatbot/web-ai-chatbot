@@ -13,6 +13,7 @@ Closes #
 ## 체크리스트
 
 - [ ] `uv run pytest` 가 통과한다
+- [ ] `uv run ruff format`, `uv run ruff check` 를 실행했고 경고가 없다
 - [ ] 새 기능·버그 수정에는 테스트를 같이 넣었다
 - [ ] 새 엔드포인트는 응답 모델·예시 값·날 수 있는 오류(`error_responses`)를 선언했다 — 선언하지 않으면 /docs 에 형식이 비어 보인다
 - [ ] 환경 변수를 추가했다면 `.env.example` 과 README 환경 변수 표를 같이 고쳤다
