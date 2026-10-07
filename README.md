@@ -30,3 +30,27 @@ Codyssey B7-1 팀 프로젝트입니다. FastAPI 웹 서비스에서 회원 인�
 - 전원: 구현 전 API 형식과 DB 구조 합의
 
 기능이 구현되면 이 README에 실행 방법, 환경 변수, API 명세, ERD, 배포 URL, DB 확인 방법과 개인별 완료 작업을 추가합니다.
+
+## 로컬 개발 환경 (맥·Windows 공통)
+
+Python 버전과 패키지 버전은 [uv](https://docs.astral.sh/uv/) 로 맞춥니다(`.python-version`, `uv.lock`).
+
+1. uv 설치
+   - 맥: `brew install uv`
+   - Windows: `winget install --id=astral-sh.uv -e`
+2. 환경 구성: `uv sync` — Python 3.14 가 없으면 uv 가 내려받습니다.
+3. 환경 변수: `.env.example` 을 `.env` 로 복사합니다(맥 `cp .env.example .env`, Windows `copy .env.example .env`).
+4. 개발 서버: `uv run python -m app` → http://127.0.0.1:8000/api/health
+5. 테스트: `uv run pytest`
+6. 코드 스타일: `uv run ruff format` (포맷 적용), `uv run ruff check --fix` (린트)
+
+맥·Git Bash 에서는 `./run.sh setup`, `./run.sh run`, `./run.sh test`, `./run.sh lint` 로도 실행할 수 있습니다.
+
+## 환경 변수
+
+로컬은 `.env`, 배포(Render)는 대시보드의 Environment 에 넣습니다. 값은 이 문서와 코드에 적지 않습니다.
+환경 변수를 추가하면 이 표와 `.env.example` 을 같이 고칩니다.
+
+| 이름 | 설명 | 기본값 |
+|---|---|---|
+| `LOG_LEVEL` | 서버 로그 레벨 (`DEBUG` / `INFO` / `WARNING` / `ERROR`) | `INFO` |
