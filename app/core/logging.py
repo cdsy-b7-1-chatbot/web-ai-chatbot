@@ -10,6 +10,7 @@ import json
 import logging
 import sys
 import time
+import traceback
 from contextvars import ContextVar
 from typing import Any
 
@@ -68,7 +69,14 @@ def log_event(
     exc_info: BaseException | None = None,
     **fields: Any,
 ) -> None:
-    """`log_event(logger, "ai_call_success", latency_ms=1240)` 처럼 호출한다."""
+    """`log_event(logger, "ai_call_success", latency_ms=1240)` 처럼 호출한다.
+
+    `exc_info` 를 넘기면 스택 트레이스를 `traceback` 필드로 붙인다. 여러 줄을 그대로 찍으면
+    이어지는 줄에 request_id 가 없어 검색이 안 되고, 예외 메시지에 섞인 입력값으로 가짜 줄이 생길 수 있어서
+    다른 값과 똑같이 한 줄로 이스케이프한다.
+    """
     merged = {"request_id": request_id_var.get(), "user_id": user_id_var.get(), **fields}
+    if exc_info is not None:
+        merged["traceback"] = "".join(traceback.format_exception(exc_info))
     pairs = " ".join(f"{key}={format_value(value)}" for key, value in merged.items())
-    logger.log(level, "%s %s", event, pairs, exc_info=exc_info)
+    logger.log(level, "%s %s", event, pairs)

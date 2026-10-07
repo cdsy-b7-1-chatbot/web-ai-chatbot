@@ -2,11 +2,17 @@
 
 from fastapi import FastAPI
 
+from app.core.config import get_settings
 from app.core.errors import register_exception_handlers
+from app.core.logging import setup_logging
+from app.core.middleware import RequestContextMiddleware
 
 
 def create_app() -> FastAPI:
+    setup_logging(get_settings().log_level)
+
     app = FastAPI(title="Web AI Chatbot")
+    app.add_middleware(RequestContextMiddleware)
     register_exception_handlers(app)
 
     @app.get("/api/health")
