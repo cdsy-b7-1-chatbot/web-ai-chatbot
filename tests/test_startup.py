@@ -19,8 +19,8 @@ def database_url(monkeypatch):
     database.get_engine.cache_clear()
 
 
-def test_startup_creates_tables(database_url, tmp_path):
-    database_url(f"sqlite:///{tmp_path / 'app.db'}")
+def test_startup_creates_tables(database_url, empty_database_url):
+    database_url(empty_database_url)
 
     with TestClient(create_app()) as client:
         assert client.get("/api/health").status_code == 200

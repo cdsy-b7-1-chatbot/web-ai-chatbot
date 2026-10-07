@@ -15,7 +15,7 @@ from app.db.database import create_db_engine, init_db, normalize_database_url
         ("postgres://u:p@host/db", "postgresql+psycopg://u:p@host/db"),
         ("postgresql://u:p@host/db", "postgresql+psycopg://u:p@host/db"),
         ("postgresql+psycopg://u:p@host/db", "postgresql+psycopg://u:p@host/db"),
-        ("sqlite:///./local.db", "sqlite:///./local.db"),
+        ("sqlite://", "sqlite://"),
     ],
 )
 def test_render_url_is_converted_for_psycopg3(url, expected):
@@ -45,8 +45,8 @@ def test_missing_database_url_stops_with_guidance(settings_with):
         database.get_engine()
 
 
-def test_get_db_yields_session_and_closes_it(settings_with):
-    settings_with("sqlite://")
+def test_get_db_yields_session_and_closes_it(settings_with, empty_database_url):
+    settings_with(empty_database_url)
 
     dependency = database.get_db()
     session = next(dependency)
