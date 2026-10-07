@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import BaseModel, Field
 
-from app.core.errors import AppError
+from app.core.errors import AppError, ErrorCode
 from app.main import create_app
 
 
@@ -19,7 +19,7 @@ def client():
 
     @app.get("/test/app-error")
     def raise_app_error():
-        raise AppError(504, "AI_TIMEOUT", "응답이 지연되고 있어요.")
+        raise AppError(403, ErrorCode.FORBIDDEN, "관리자만 볼 수 있습니다.")
 
     @app.post("/test/validate")
     def validate(body: _SignupLike):
@@ -31,8 +31,8 @@ def client():
 def test_app_error_uses_its_own_status_and_code(client):
     response = client.get("/test/app-error")
 
-    assert response.status_code == 504
-    assert response.json() == {"error": "AI_TIMEOUT", "message": "응답이 지연되고 있어요."}
+    assert response.status_code == 403
+    assert response.json() == {"error": "FORBIDDEN", "message": "관리자만 볼 수 있습니다."}
 
 
 def test_unknown_path_is_converted_from_fastapi_default(client):
