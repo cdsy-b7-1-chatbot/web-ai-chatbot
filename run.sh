@@ -16,7 +16,8 @@ case "${1:-}" in
     .venv/bin/python -m pip install -q -r requirements-dev.txt
     ;;
   run)
-    exec "${PYTHON:-.venv/bin/python}" -m uvicorn app.main:app --reload
+    # uvicorn 자체 접근 로그는 끈다 — request_completed 와 내용이 겹치고 request_id 가 없어 검색이 안 된다
+    exec "${PYTHON:-.venv/bin/python}" -m uvicorn app.main:app --reload --no-access-log
     ;;
   test)
     shift
