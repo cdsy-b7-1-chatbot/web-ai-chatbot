@@ -20,7 +20,8 @@ user_id_var: ContextVar[int | None] = ContextVar("user_id", default=None)
 
 _LOG_FORMAT = "%(asctime)s %(levelname)s %(message)s"
 _HANDLER_NAME = "app-stdout"
-_QUIET_LOGGERS = ("httpx", "httpx2")  # AI 제공자 SDK 들은 httpx 를, 테스트 클라이언트는 httpx2 를 쓴다
+# AI 제공자 SDK 들은 httpx 를, 테스트 클라이언트는 httpx2 를 쓴다
+_QUIET_LOGGERS = ("httpx", "httpx2")
 
 # 이 문자가 하나라도 있으면 값을 큰따옴표로 감싼다(줄바꿈 같은 제어 문자는 isprintable 로 따로 거른다).
 _QUOTE_TRIGGERS = frozenset(' "=\\')

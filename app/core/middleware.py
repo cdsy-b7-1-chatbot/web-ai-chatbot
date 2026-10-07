@@ -69,7 +69,11 @@ class RequestContextMiddleware:
             await self.app(scope, receive, send_with_request_id)
         except Exception as exc:
             log_event(
-                logger, "unhandled_error", logging.ERROR, exc_info=exc, error_type=type(exc).__name__
+                logger,
+                "unhandled_error",
+                logging.ERROR,
+                exc_info=exc,
+                error_type=type(exc).__name__,
             )
             if response_started:  # 응답을 보내기 시작한 뒤라면 바꿀 수 없다
                 raise

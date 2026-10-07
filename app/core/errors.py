@@ -78,7 +78,9 @@ class ErrorResponse(BaseModel):
     """모든 오류 응답의 형식."""
 
     model_config = ConfigDict(
-        json_schema_extra={"examples": [{"error": "VALIDATION_ERROR", "message": VALIDATION_MESSAGE}]}
+        json_schema_extra={
+            "examples": [{"error": "VALIDATION_ERROR", "message": VALIDATION_MESSAGE}]
+        }
     )
 
     error: ErrorCode = Field(description="오류 코드 — 프론트는 이 값으로 분기한다")

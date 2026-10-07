@@ -54,7 +54,10 @@ def test_validation_error_hides_details_from_response(client):
     response = client.post("/test/validate", json={"username": "ab", "password": "short-pw"})
 
     assert response.status_code == 422
-    assert response.json() == {"error": "VALIDATION_ERROR", "message": "입력값이 올바르지 않습니다."}
+    assert response.json() == {
+        "error": "VALIDATION_ERROR",
+        "message": "입력값이 올바르지 않습니다.",
+    }
 
 
 def test_validation_error_logs_field_but_not_input_value(client, caplog):
