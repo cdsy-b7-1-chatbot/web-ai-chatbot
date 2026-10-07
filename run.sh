@@ -5,6 +5,7 @@
 #   ./run.sh setup   = uv sync               가상환경(.venv) + 의존성 — .python-version 의 Python 이 없으면 uv 가 내려받는다
 #   ./run.sh run     = uv run python -m app  개발 서버 (코드 변경 시 자동 재시작, http://127.0.0.1:8000)
 #   ./run.sh test    = uv run pytest         테스트 (pytest 인자를 그대로 넘길 수 있다: ./run.sh test -k health)
+#   ./run.sh lint    = uv run ruff format && uv run ruff check --fix   포맷 적용 + 린트(고칠 수 있는 건 자동으로)
 #
 # PYTHON 환경 변수로 인터프리터를 바꿀 수 있다. 예) PYTHON=3.13 ./run.sh test
 set -e
@@ -29,8 +30,12 @@ case "${1:-}" in
     shift
     exec uv run "${python_opt[@]}" pytest "$@"
     ;;
+  lint)
+    uv run "${python_opt[@]}" ruff format
+    exec uv run "${python_opt[@]}" ruff check --fix
+    ;;
   *)
-    echo "사용법: $0 {setup|run|test}" >&2
+    echo "사용법: $0 {setup|run|test|lint}" >&2
     exit 1
     ;;
 esac

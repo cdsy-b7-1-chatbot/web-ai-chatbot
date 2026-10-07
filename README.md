@@ -42,8 +42,9 @@ Python 버전과 패키지 버전은 [uv](https://docs.astral.sh/uv/) 로 맞춥
 3. 환경 변수: `.env.example` 을 `.env` 로 복사합니다(맥 `cp .env.example .env`, Windows `copy .env.example .env`).
 4. 개발 서버: `uv run python -m app` → http://127.0.0.1:8000/api/health
 5. 테스트: `uv run pytest`
+6. 코드 스타일: `uv run ruff format` (포맷 적용), `uv run ruff check --fix` (린트)
 
-맥·Git Bash 에서는 `./run.sh setup`, `./run.sh run`, `./run.sh test` 로도 실행할 수 있습니다.
+맥·Git Bash 에서는 `./run.sh setup`, `./run.sh run`, `./run.sh test`, `./run.sh lint` 로도 실행할 수 있습니다.
 
 ## 환경 변수
 
