@@ -40,9 +40,18 @@ Python 버전과 패키지 버전은 [uv](https://docs.astral.sh/uv/) 로 맞춥
    - Windows: `winget install --id=astral-sh.uv -e`
 2. 환경 구성: `uv sync` — Python 3.14 가 없으면 uv 가 내려받습니다.
 3. 환경 변수: `.env.example` 을 `.env` 로 복사합니다(맥 `cp .env.example .env`, Windows `copy .env.example .env`).
-4. 개발 서버: `uv run python -m app` → http://127.0.0.1:8000/api/health
-5. 테스트: `uv run pytest`
-6. 코드 스타일: `uv run ruff format` (포맷 적용), `uv run ruff check --fix` (린트)
+4. 로컬 DB(Postgres): [Docker Desktop](https://www.docker.com/products/docker-desktop/) 으로 띄웁니다(Windows 는 WSL2 필요). 처음 한 번:
+   ```
+   docker run -d --name chatbot-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=chatbot -p 5432:5432 postgres:17
+   docker exec chatbot-db createdb -U postgres chatbot_test
+   ```
+   두 번째 줄은 테스트용 DB 입니다(연결 오류가 나면 몇 초 뒤 다시). 다음부터는 `docker start chatbot-db` 만 하면 됩니다.
+   Docker 를 쓰지 않으면 개인 Render Postgres 의 External Database URL 을 `.env` 의 `DATABASE_URL` 에 넣습니다.
+5. 개발 서버: `uv run python -m app` → http://127.0.0.1:8000/api/health
+6. 테스트: `uv run pytest` — DB 없이 메모리 SQLite 로 바로 돕니다. DB 코드를 바꾼 PR 은 Postgres 로도 한 번 돌립니다.
+   - 맥: `TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/chatbot_test uv run pytest`
+   - Windows(PowerShell): `$env:TEST_DATABASE_URL="postgresql://postgres:postgres@localhost:5432/chatbot_test"; uv run pytest`
+7. 코드 스타일: `uv run ruff format` (포맷 적용), `uv run ruff check --fix` (린트)
 
 맥·Git Bash 에서는 `./run.sh setup`, `./run.sh run`, `./run.sh test`, `./run.sh lint` 로도 실행할 수 있습니다.
 
@@ -54,4 +63,5 @@ Python 버전과 패키지 버전은 [uv](https://docs.astral.sh/uv/) 로 맞춥
 | 이름 | 설명 | 기본값 |
 |---|---|---|
 | `LOG_LEVEL` | 서버 로그 레벨 (`DEBUG` / `INFO` / `WARNING` / `ERROR`) | `INFO` |
-| `DATABASE_URL` | DB 주소. 로컬은 `sqlite:///./local.db`(바로 실행) 또는 개인 Render Postgres, 배포는 Render Postgres. DB 코드를 바꾼 PR 은 Postgres 로 한 번 확인한다 | 없음 — 비어 있으면 서버가 시작하지 않음 |
+| `DATABASE_URL` | Postgres 주소. 로컬은 Docker Postgres(`.env.example` 값) 또는 개인 Render Postgres, 배포는 Render Postgres | 없음 — 비어 있으면 서버가 시작하지 않음 |
+| `TEST_DATABASE_URL` | 테스트 전용. 주면 테스트를 이 Postgres 로 돌린다. `.env` 에서는 읽지 않으니 명령 앞에 붙인다. 테스트가 테이블을 지우므로 DB 이름에 `test` 가 들어가야 한다 | 없음 — 메모리 SQLite |

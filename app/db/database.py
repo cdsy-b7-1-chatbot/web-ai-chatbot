@@ -1,10 +1,10 @@
 """DB 연결 — 엔진·세션·`get_db` 의존성.
 
-`DATABASE_URL` 하나로 Postgres(Render)와 로컬 SQLite 를 모두 쓴다.
+앱은 Postgres 로만 실행한다(배포 Render, 로컬 Docker 또는 개인 Render). SQLite 는 테스트 기본값(메모리 DB)으로만
+쓴다 — SQLite 는 문자열 길이를 검사하지 않고 시간대를 버려서, 앱을 SQLite 로 돌리면 응답이 배포와 달라진다.
 
     postgresql://user:pass@host/db   Render 가 주는 형식 그대로 넣으면 psycopg 3 드라이버로 바꿔 쓴다
-    sqlite:///./local.db             로컬 개발용 파일 DB (.env.example 기본값)
-    sqlite://                        메모리 DB (테스트용)
+    sqlite://                        메모리 DB (테스트 기본값, tests/conftest.py)
 
 엔진은 처음 쓸 때 만든다 — import 만으로는 DB 에 접속하지 않아 테스트·도구 실행이 가볍다.
 """
@@ -25,7 +25,8 @@ logger = logging.getLogger(__name__)
 
 MISSING_URL_MESSAGE = (
     "DATABASE_URL 이 설정되지 않았습니다. "
-    "로컬은 .env.example 을 .env 로 복사하고(SQLite), 배포는 Render 환경 변수에 Postgres 주소를 넣으세요."
+    "로컬은 .env.example 을 .env 로 복사하고 Postgres 를 띄우세요(README 로컬 개발 환경). "
+    "배포는 Render 환경 변수에 Postgres 주소를 넣으세요."
 )
 
 _IN_MEMORY_SQLITE = ("sqlite://", "sqlite:///:memory:")
