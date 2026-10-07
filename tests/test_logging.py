@@ -2,7 +2,7 @@ import logging
 
 import pytest
 
-from app.core.logging import format_value, log_event, request_id_var, user_id_var
+from app.core.logging import format_value, log_event, request_id_var, setup_logging, user_id_var
 
 
 @pytest.mark.parametrize(
@@ -78,3 +78,14 @@ def test_log_event_passes_level(caplog):
 
     assert caplog.records[0].levelno == logging.WARNING
     assert caplog.messages == ['ai_call_failed request_id=- user_id=- error="read timed out"']
+
+
+@pytest.mark.parametrize("name", ["httpx", "httpx2"])
+def test_http_client_request_urls_are_not_logged(name, caplog):
+    # URL 에 API 키를 넣는 AI 서비스가 있어, 나가는 요청 URL 이 INFO 로 남지 않아야 한다
+    setup_logging()
+    caplog.set_level(logging.INFO)
+
+    logging.getLogger(name).info("HTTP Request: POST https://api.example.com/v1/chat?key=SECRET")
+
+    assert "SECRET" not in caplog.text
