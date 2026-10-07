@@ -1,9 +1,10 @@
 #!/bin/bash
-# 로컬 실행·테스트 진입점. uv 가 필요하다(설치: brew install uv).
+# 맥·Linux·Git Bash 용 단축 명령. uv 가 필요하다(설치: brew install uv).
+# Windows PowerShell 에서는 아래 주석의 uv 명령을 그대로 쓴다(README 참고).
 #
-#   ./run.sh setup   가상환경(.venv) 생성 + 의존성 설치 — .python-version 의 Python 이 없으면 uv 가 내려받는다
-#   ./run.sh run     개발 서버 (코드 변경 시 자동 재시작, http://127.0.0.1:8000)
-#   ./run.sh test    테스트 (pytest 인자를 그대로 넘길 수 있다: ./run.sh test -k health)
+#   ./run.sh setup   = uv sync               가상환경(.venv) + 의존성 — .python-version 의 Python 이 없으면 uv 가 내려받는다
+#   ./run.sh run     = uv run python -m app  개발 서버 (코드 변경 시 자동 재시작, http://127.0.0.1:8000)
+#   ./run.sh test    = uv run pytest         테스트 (pytest 인자를 그대로 넘길 수 있다: ./run.sh test -k health)
 #
 # PYTHON 환경 변수로 인터프리터를 바꿀 수 있다. 예) PYTHON=3.13 ./run.sh test
 set -e
@@ -22,8 +23,7 @@ case "${1:-}" in
     uv sync "${python_opt[@]}"
     ;;
   run)
-    # uvicorn 자체 접근 로그는 끈다 — request_completed 와 내용이 겹치고 request_id 가 없어 검색이 안 된다
-    exec uv run "${python_opt[@]}" uvicorn app.main:app --reload --no-access-log
+    exec uv run "${python_opt[@]}" python -m app
     ;;
   test)
     shift
