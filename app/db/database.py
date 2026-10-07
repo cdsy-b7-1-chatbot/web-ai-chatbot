@@ -12,8 +12,9 @@
 import logging
 from collections.abc import Iterator
 from functools import lru_cache
-from typing import Any
+from typing import Annotated, Any
 
+from fastapi import Depends
 from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -86,6 +87,10 @@ def get_db() -> Iterator[Session]:
     """FastAPI 의존성 — 요청마다 세션을 열고 끝나면 닫는다(커밋하지 않은 변경은 버려진다)."""
     with _session_factory()() as session:
         yield session
+
+
+# 라우트에서는 `db: SessionDep` 로 받는다 — `db=Depends(get_db)` 기본값 방식은 ruff B008 에 걸린다
+SessionDep = Annotated[Session, Depends(get_db)]
 
 
 def init_db(engine: Engine) -> None:

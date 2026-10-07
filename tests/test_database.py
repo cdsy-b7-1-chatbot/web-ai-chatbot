@@ -1,12 +1,14 @@
 import logging
 
 import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
 from app.db import database
-from app.db.database import create_db_engine, init_db, normalize_database_url
+from app.db.database import SessionDep, create_db_engine, init_db, normalize_database_url
 
 
 @pytest.mark.parametrize(
@@ -54,6 +56,17 @@ def test_get_db_yields_session_and_closes_it(settings_with, empty_database_url):
     assert isinstance(session, Session)
     assert session.execute(text("SELECT 1")).scalar() == 1
     dependency.close()
+
+
+def test_route_receives_session_through_session_dep(settings_with, empty_database_url):
+    settings_with(empty_database_url)
+    app = FastAPI()
+
+    @app.get("/one")
+    def one(db: SessionDep) -> int:
+        return db.execute(text("SELECT 1")).scalar_one()
+
+    assert TestClient(app).get("/one").json() == 1
 
 
 def test_sqlite_foreign_keys_are_enforced():
