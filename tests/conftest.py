@@ -17,3 +17,13 @@ def engine():
 def db(engine):
     with Session(engine) as session:
         yield session
+
+
+@pytest.fixture
+def user(db):
+    from app.db.models import User
+
+    user = User(username="sangwoo", password_hash="argon2-hash")
+    db.add(user)
+    db.commit()
+    return user
