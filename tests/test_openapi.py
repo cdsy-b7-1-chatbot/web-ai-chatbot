@@ -58,3 +58,9 @@ def test_every_error_code_is_documented_in_description(spec):
 
 def test_swagger_ui_is_served():
     assert TestClient(create_app()).get("/docs").status_code == 200
+
+
+def test_health_response_is_documented_with_example(spec):
+    schema = _schema(spec, "/api/health", "get", "200")
+    assert schema == {"$ref": "#/components/schemas/HealthResponse"}
+    assert spec["components"]["schemas"]["HealthResponse"]["examples"] == [{"status": "ok"}]
