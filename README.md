@@ -54,3 +54,4 @@ Python 버전과 패키지 버전은 [uv](https://docs.astral.sh/uv/) 로 맞춥
 | 이름 | 설명 | 기본값 |
 |---|---|---|
 | `LOG_LEVEL` | 서버 로그 레벨 (`DEBUG` / `INFO` / `WARNING` / `ERROR`) | `INFO` |
+| `DATABASE_URL` | DB 주소. 로컬은 `sqlite:///./local.db`(바로 실행) 또는 개인 Render Postgres, 배포는 Render Postgres. DB 코드를 바꾼 PR 은 Postgres 로 한 번 확인한다 | 없음 — 비어 있으면 서버가 시작하지 않음 |
