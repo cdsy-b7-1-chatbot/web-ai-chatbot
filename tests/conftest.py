@@ -27,3 +27,13 @@ def user(db):
     db.add(user)
     db.commit()
     return user
+
+
+@pytest.fixture
+def conversation(db, user):
+    from app.db.models import Conversation
+
+    conversation = Conversation(user_id=user.id, title="배포 방법")
+    db.add(conversation)
+    db.commit()
+    return conversation
