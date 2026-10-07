@@ -44,3 +44,12 @@ Python 버전과 패키지 버전은 [uv](https://docs.astral.sh/uv/) 로 맞춥
 5. 테스트: `uv run pytest`
 
 맥·Git Bash 에서는 `./run.sh setup`, `./run.sh run`, `./run.sh test` 로도 실행할 수 있습니다.
+
+## 환경 변수
+
+로컬은 `.env`, 배포(Render)는 대시보드의 Environment 에 넣습니다. 값은 이 문서와 코드에 적지 않습니다.
+환경 변수를 추가하면 이 표와 `.env.example` 을 같이 고칩니다.
+
+| 이름 | 설명 | 기본값 |
+|---|---|---|
+| `LOG_LEVEL` | 서버 로그 레벨 (`DEBUG` / `INFO` / `WARNING` / `ERROR`) | `INFO` |
