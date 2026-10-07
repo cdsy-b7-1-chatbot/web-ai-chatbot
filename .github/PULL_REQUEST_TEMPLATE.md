@@ -18,7 +18,7 @@ Closes #
 - [ ] 새 엔드포인트는 응답 모델·예시 값·날 수 있는 오류(`error_responses`)를 선언했다 — 선언하지 않으면 /docs 에 형식이 비어 보인다
 - [ ] 환경 변수를 추가했다면 `.env.example` 과 README 환경 변수 표를 같이 고쳤다
 - [ ] 코드·커밋·PR 본문·스크린샷에 키·비밀번호가 없다
-- [ ] DB 를 건드렸다면 개인 Render Postgres 로 서버를 띄워 직접 확인했다
+- [ ] DB 를 건드렸다면 Postgres(로컬 Docker 또는 개인 Render)로 서버를 띄워 직접 확인했다
 
 ## 리뷰 요청 사항
 
