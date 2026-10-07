@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     log_level: str = "INFO"
+    # 비어 있으면 서버가 시작하지 않는다(app/db/database.py). 로컬은 .env.example 의 Docker Postgres 주소.
+    database_url: str | None = None
 
 
 @lru_cache

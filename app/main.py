@@ -1,5 +1,8 @@
 """FastAPI 앱 진입점. 실행: `uvicorn app.main:app`"""
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from pydantic import BaseModel, ConfigDict
 
@@ -8,6 +11,14 @@ from app.core.errors import register_exception_handlers
 from app.core.logging import setup_logging
 from app.core.middleware import RequestContextMiddleware
 from app.core.openapi import app_openapi_options, use_error_response_for_validation
+from app.db.database import get_engine, init_db
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    # 없는 테이블만 만든다. DATABASE_URL 이 비어 있으면 여기서 안내와 함께 시작을 멈춘다
+    init_db(get_engine())
+    yield
 
 
 class HealthResponse(BaseModel):
@@ -19,7 +30,7 @@ class HealthResponse(BaseModel):
 def create_app() -> FastAPI:
     setup_logging(get_settings().log_level)
 
-    app = FastAPI(title="Web AI Chatbot", **app_openapi_options())
+    app = FastAPI(title="Web AI Chatbot", lifespan=lifespan, **app_openapi_options())
     app.add_middleware(RequestContextMiddleware)
     register_exception_handlers(app)
     use_error_response_for_validation(app)

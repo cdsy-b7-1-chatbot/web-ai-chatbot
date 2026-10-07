@@ -5,13 +5,16 @@ description = "FastAPI 웹 AI 챗봇 서비스 (Codyssey B7-1 팀 프로젝트)"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.142.2",
+    "psycopg[binary]>=3.2",
     "pydantic-settings>=2.15.0",
+    "sqlalchemy>=2.0",
     "uvicorn[standard]>=0.54.0",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+markers = ["postgres: Postgres 에서만 의미 있는 테스트 — TEST_DATABASE_URL 을 줄 때만 실행(tests/conftest.py)"]
 
 [dependency-groups]
 dev = [
