@@ -9,6 +9,9 @@ from pwdlib.hashers.argon2 import Argon2Hasher
 
 from app.core.config import get_settings
 
+# 로그인 토큰을 담는 쿠키 이름 — router 가 쓰고 dependencies 가 읽는다
+ACCESS_TOKEN_COOKIE = "access_token"
+
 JWT_ALGORITHM = "HS256"
 # HS256 키는 해시 출력(32바이트) 이상이어야 한다(RFC 7518 3.2). 짧으면 무차별 대입으로 키를 찾을 수 있다
 JWT_SECRET_MIN_BYTES = 32
