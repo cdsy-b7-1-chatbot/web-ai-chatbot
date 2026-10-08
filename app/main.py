@@ -4,6 +4,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict
 
 from app.auth.dependencies import user_id_from_request
@@ -12,7 +13,7 @@ from app.auth.security import ensure_jwt_secret
 from app.core.config import get_settings
 from app.core.errors import register_exception_handlers
 from app.core.logging import setup_logging
-from app.core.middleware import RequestContextMiddleware
+from app.core.middleware import REQUEST_ID_HEADER, RequestContextMiddleware
 from app.core.openapi import app_openapi_options, use_error_response_for_validation
 from app.db.database import get_engine, init_db
 
@@ -33,11 +34,22 @@ class HealthResponse(BaseModel):
 
 
 def create_app() -> FastAPI:
-    setup_logging(get_settings().log_level)
+    settings = get_settings()
+    setup_logging(settings.log_level)
 
     app = FastAPI(title="Web AI Chatbot", lifespan=lifespan, **app_openapi_options())
     # 요청 로그마다 토큰 주인의 user_id 를 붙인다(비로그인은 -)
     app.add_middleware(RequestContextMiddleware, resolve_user_id=user_id_from_request)
+    if settings.cors_origin_list:
+        # 프론트를 다른 주소에 따로 배포했을 때만. 그때 토큰은 Authorization 헤더로 오므로 쿠키는 허용하지 않는다.
+        # 나중에 추가한 미들웨어가 바깥쪽이라, 500 응답에도 CORS 헤더가 붙어 프론트가 오류를 읽을 수 있다
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=settings.cors_origin_list,
+            allow_methods=["*"],
+            allow_headers=["Authorization", "Content-Type"],
+            expose_headers=[REQUEST_ID_HEADER],  # 오류를 알릴 때 프론트가 요청 번호를 읽을 수 있게
+        )
     register_exception_handlers(app)
     use_error_response_for_validation(app)
 
