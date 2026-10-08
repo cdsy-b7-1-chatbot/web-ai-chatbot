@@ -3,6 +3,7 @@
 from fastapi import APIRouter, Response
 
 from app.auth import service
+from app.auth.dependencies import CurrentUser
 from app.auth.schemas import LoginRequest, SignupRequest, TokenResponse, UserResponse
 from app.auth.security import ACCESS_TOKEN_COOKIE
 from app.core.config import get_settings
@@ -53,3 +54,9 @@ def logout(response: Response) -> None:
     body 토큰을 저장해 쓰는 프론트는 저장한 토큰도 지운다.
     """
     response.delete_cookie(ACCESS_TOKEN_COOKIE, **_cookie_options())
+
+
+@router.get("/me", responses=error_responses(401))
+def me(user: CurrentUser) -> UserResponse:
+    """로그인한 사용자. 토큰이 없거나 만료되면 401 — 프론트는 로그인 화면으로 보낸다."""
+    return UserResponse.model_validate(user)

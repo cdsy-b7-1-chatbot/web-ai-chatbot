@@ -154,6 +154,14 @@ def user(db, _user_password_hash):
 
 
 @pytest.fixture
+def auth_headers(user):
+    """`user` 로 로그인한 요청 헤더 — `client.get("/api/...", headers=auth_headers)`."""
+    from app.auth.security import create_access_token
+
+    return {"Authorization": f"Bearer {create_access_token(user.id)}"}
+
+
+@pytest.fixture
 def conversation(db, user):
     from app.db.models import Conversation
 
