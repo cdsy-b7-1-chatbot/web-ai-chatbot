@@ -38,6 +38,8 @@ feature/ai-chat ──PR──┘   (기능이 하나씩 쌓임)                
 | 경로 | 내용 | 담당 |
 |---|---|---|
 | `app/core/` | 공통 기반 — 설정, 서버 로그, 요청 미들웨어, 오류 응답, /docs | 백엔드 A |
+| `app/db/` | DB 연결(`database.py` — `SessionDep`)·테이블 모델(`models/`) | 백엔드 A |
+| `app/auth/` | 회원가입·로그인·로그아웃, 로그인 사용자 확인(`dependencies.py` — `CurrentUser`·`OptionalUser`) | 백엔드 A |
 | `tests/` | 테스트 — `tests/test_<모듈>.py` | 각 담당 |
 | `docs/` | 협업·기술 문서 | 전원 |
 
