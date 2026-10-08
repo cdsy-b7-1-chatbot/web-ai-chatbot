@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from pydantic import BaseModel, ConfigDict
 
+from app.auth.router import router as auth_router
 from app.auth.security import ensure_jwt_secret
 from app.core.config import get_settings
 from app.core.errors import register_exception_handlers
@@ -42,6 +43,9 @@ def create_app() -> FastAPI:
     def health() -> HealthResponse:
         """서버가 떠 있는지 확인(배포 헬스 체크용)."""
         return HealthResponse(status="ok")
+
+    # 영역별 라우터 — 각자 한 줄씩 추가한다(CONTRIBUTING 2장)
+    app.include_router(auth_router)
 
     return app
 

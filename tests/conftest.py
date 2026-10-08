@@ -13,6 +13,7 @@ SQLite 로만 통과한 테스트는 배포에서 다르게 동작할 수 있다
 import os
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import make_url
 from sqlalchemy.orm import Session
 
@@ -107,10 +108,46 @@ def db(engine):
 
 
 @pytest.fixture
-def user(db):
+def client(engine):
+    """API 테스트용 TestClient — 앱의 DB 를 테스트 DB 로 바꿨다.
+
+    https 주소라 Secure 쿠키도 오간다(http 면 테스트 클라이언트가 Secure 쿠키를 보내지 않는다).
+    lifespan 은 돌리지 않는다 — 테이블은 engine 픽스처가 이미 만들었다.
+    """
+    from app.db.database import get_db
+    from app.main import create_app
+
+    def test_db():
+        with Session(engine, expire_on_commit=False) as session:
+            yield session
+
+    app = create_app()
+    app.dependency_overrides[get_db] = test_db
+    return TestClient(app, base_url="https://testserver")
+
+
+USER_PASSWORD = "password123"
+
+
+@pytest.fixture(scope="session")
+def _user_password_hash():
+    # Argon2 해싱은 한 번에 20ms 쯤 걸린다 — 테스트 실행 전체에서 한 번만 만든다
+    from app.auth.security import hash_password
+
+    return hash_password(USER_PASSWORD)
+
+
+@pytest.fixture
+def user_password():
+    """`user` 픽스처의 비밀번호 — 로그인 테스트용."""
+    return USER_PASSWORD
+
+
+@pytest.fixture
+def user(db, _user_password_hash):
     from app.db.models import User
 
-    user = User(username="sangwoo", password_hash="argon2-hash")
+    user = User(username="sangwoo", password_hash=_user_password_hash)
     db.add(user)
     db.commit()
     return user
