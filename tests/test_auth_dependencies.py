@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -110,3 +111,23 @@ def test_docs_show_bearer_auth_on_protected_route(client):
     assert spec["components"]["securitySchemes"]["HTTPBearer"]["scheme"] == "bearer"
     assert spec["paths"][ME]["get"]["security"] == [{"HTTPBearer": []}]
     assert "401" in spec["paths"][ME]["get"]["responses"]
+
+
+def test_request_logs_carry_token_owner_user_id(client, user, auth_headers, caplog):
+    caplog.set_level(logging.INFO)
+
+    client.get(ME, headers=auth_headers)
+
+    received = next(m for m in caplog.messages if m.startswith("request_received"))
+    completed = next(m for m in caplog.messages if m.startswith("request_completed"))
+    assert f"user_id={user.id} " in received
+    assert f"user_id={user.id} " in completed
+
+
+def test_request_logs_without_valid_token_have_no_user_id(client, caplog):
+    caplog.set_level(logging.INFO)
+
+    client.get(ME, headers=_bearer("not-a-jwt"))
+
+    received = next(m for m in caplog.messages if m.startswith("request_received"))
+    assert "user_id=- " in received

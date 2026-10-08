@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from pydantic import BaseModel, ConfigDict
 
+from app.auth.dependencies import user_id_from_request
 from app.auth.router import router as auth_router
 from app.auth.security import ensure_jwt_secret
 from app.core.config import get_settings
@@ -35,7 +36,8 @@ def create_app() -> FastAPI:
     setup_logging(get_settings().log_level)
 
     app = FastAPI(title="Web AI Chatbot", lifespan=lifespan, **app_openapi_options())
-    app.add_middleware(RequestContextMiddleware)
+    # 요청 로그마다 토큰 주인의 user_id 를 붙인다(비로그인은 -)
+    app.add_middleware(RequestContextMiddleware, resolve_user_id=user_id_from_request)
     register_exception_handlers(app)
     use_error_response_for_validation(app)
 

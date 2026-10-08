@@ -38,14 +38,23 @@ def token_from_request(conn: HTTPConnection) -> str | None:
     return conn.cookies.get(ACCESS_TOKEN_COOKIE) or None
 
 
+def user_id_from_request(conn: HTTPConnection) -> int | None:
+    """요청 미들웨어가 로그에 user_id 를 붙일 때 쓴다(app/main.py).
+
+    서명·만료만 확인하고 DB 는 보지 않는다 — 모든 요청마다 조회하지 않기 위해서다.
+    그래서 로그의 user_id 는 "유효한 토큰의 주인"이고, 그 요청이 인증을 요구했는지와는 별개다.
+    """
+    token = token_from_request(conn)
+    return decode_access_token(token) if token else None
+
+
 def get_current_user_optional(
     request: Request,
     db: SessionDep,
     _: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer_scheme)],
 ) -> User | None:
     """로그인했으면 User, 아니면 None — 토큰 없음·만료·위조·없는 사용자를 모두 비로그인으로 본다."""
-    token = token_from_request(request)
-    user_id = decode_access_token(token) if token else None
+    user_id = user_id_from_request(request)
     return get_user(db, user_id) if user_id is not None else None
 
 
