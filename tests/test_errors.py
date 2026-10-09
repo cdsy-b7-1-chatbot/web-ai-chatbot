@@ -21,6 +21,15 @@ def client():
     def raise_app_error():
         raise AppError(403, ErrorCode.FORBIDDEN, "관리자만 볼 수 있습니다.")
 
+    @app.get("/test/app-error-with-header")
+    def raise_app_error_with_header():
+        raise AppError(
+            401,
+            ErrorCode.UNAUTHORIZED,
+            "로그인이 필요합니다.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     @app.post("/test/validate")
     def validate(body: _SignupLike):
         return {"ok": True}
@@ -33,6 +42,13 @@ def test_app_error_uses_its_own_status_and_code(client):
 
     assert response.status_code == 403
     assert response.json() == {"error": "FORBIDDEN", "message": "관리자만 볼 수 있습니다."}
+
+
+def test_app_error_headers_are_sent(client):
+    response = client.get("/test/app-error-with-header")
+
+    assert response.status_code == 401
+    assert response.headers["www-authenticate"] == "Bearer"
 
 
 def test_unknown_path_is_converted_from_fastapi_default(client):

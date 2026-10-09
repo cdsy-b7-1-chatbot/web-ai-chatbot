@@ -35,6 +35,8 @@ class ErrorCode(StrEnum):
     NOT_FOUND = "NOT_FOUND"
     METHOD_NOT_ALLOWED = "METHOD_NOT_ALLOWED"
     VALIDATION_ERROR = "VALIDATION_ERROR"
+    USERNAME_TAKEN = "USERNAME_TAKEN"
+    INVALID_CREDENTIALS = "INVALID_CREDENTIALS"
     HTTP_ERROR = "HTTP_ERROR"
     INTERNAL_ERROR = "INTERNAL_ERROR"
 
@@ -47,6 +49,8 @@ ERROR_CODE_DOCS: dict[ErrorCode, str] = {
     ErrorCode.NOT_FOUND: "404 — 없는 경로 또는 리소스",
     ErrorCode.METHOD_NOT_ALLOWED: "405 — 허용되지 않은 요청 방식",
     ErrorCode.VALIDATION_ERROR: "422 — 입력값 검증 실패. 어느 필드가 틀렸는지는 서버 로그에만 남는다",
+    ErrorCode.USERNAME_TAKEN: "409 — 회원가입: 이미 쓰고 있는 아이디(대소문자 구분 없음)",
+    ErrorCode.INVALID_CREDENTIALS: "401 — 로그인: 아이디 또는 비밀번호가 틀림(어느 쪽인지 알려주지 않음)",
     ErrorCode.HTTP_ERROR: "그 밖의 HTTP 오류",
     ErrorCode.INTERNAL_ERROR: "500 — 처리되지 않은 서버 오류. 원인은 서버 로그에만 남는다",
 }
@@ -88,13 +92,23 @@ class ErrorResponse(BaseModel):
 
 
 class AppError(Exception):
-    """우리 코드가 직접 발생시키는 오류. 상태 코드·오류 코드·안내 문구를 그대로 응답한다."""
+    """우리 코드가 직접 발생시키는 오류. 상태 코드·오류 코드·안내 문구를 그대로 응답한다.
 
-    def __init__(self, status_code: int, error: ErrorCode, message: str) -> None:
+    `headers` 는 응답 헤더에 그대로 붙는다(예: 401 의 `WWW-Authenticate: Bearer`).
+    """
+
+    def __init__(
+        self,
+        status_code: int,
+        error: ErrorCode,
+        message: str,
+        headers: dict[str, str] | None = None,
+    ) -> None:
         super().__init__(message)
         self.status_code = status_code
         self.error = error
         self.message = message
+        self.headers = headers
 
 
 def error_responses(*status_codes: int) -> dict[int | str, dict[str, Any]]:
@@ -121,7 +135,7 @@ def internal_error_response() -> JSONResponse:
 
 
 async def _handle_app_error(_: Request, exc: AppError) -> JSONResponse:
-    return error_response(exc.status_code, exc.error, exc.message)
+    return error_response(exc.status_code, exc.error, exc.message, headers=exc.headers)
 
 
 async def _handle_http_exception(_: Request, exc: StarletteHTTPException) -> JSONResponse:

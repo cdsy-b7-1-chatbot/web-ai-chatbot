@@ -5,20 +5,29 @@
 
 DB 코드를 바꾼 PR 은 Postgres 로 한 번 돌린다 — SQLite 는 문자열 길이를 검사하지 않고 시간대를 버려서
 SQLite 로만 통과한 테스트는 배포에서 다르게 동작할 수 있다. `@pytest.mark.postgres` 테스트는 Postgres 에서만 돈다.
+
+설정(`get_settings()`)은 테스트마다 `.env` 없이 기본값 + 테스트용 JWT_SECRET 으로 시작한다.
+바꾸려면 `configure(cookie_secure="false")` 처럼 `configure` 픽스처를 쓴다.
 """
 
 import os
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import make_url
 from sqlalchemy.orm import Session
 
 import app.db.models  # noqa: F401 — 지울 테이블을 알도록 모든 모델을 Base 에 등록
+from app.core.config import Settings, get_settings
 from app.db.database import Base, create_db_engine, init_db, normalize_database_url
 
 TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL") or "sqlite://"
 _url = make_url(normalize_database_url(TEST_DATABASE_URL))
 _backend = _url.get_backend_name()
+
+TEST_JWT_SECRET = "test-only-jwt-secret-0123456789abcdef"
+# 인증 설정 — 개발자 셸에 export 된 값도 테스트에 섞이지 않게 지운다
+_AUTH_ENV = ("JWT_SECRET", "JWT_EXPIRE_MINUTES", "COOKIE_SECURE", "CORS_ORIGINS")
 
 
 def pytest_configure(config):
@@ -43,6 +52,30 @@ def pytest_collection_modifyitems(config, items):
     for item in items:
         if "postgres" in item.keywords:
             item.add_marker(skip)
+
+
+@pytest.fixture(autouse=True)
+def _test_settings(monkeypatch):
+    """모든 테스트에 적용 — 개발자의 `.env`(예: COOKIE_SECURE=false)에 따라 결과가 달라지지 않게 한다."""
+    monkeypatch.setitem(Settings.model_config, "env_file", None)
+    for name in _AUTH_ENV:
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("JWT_SECRET", TEST_JWT_SECRET)
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
+
+
+@pytest.fixture
+def configure(monkeypatch):
+    """`configure(cookie_secure="false", jwt_expire_minutes="5")` — 이 테스트에서만 설정값을 바꾼다."""
+
+    def apply(**values: str) -> None:
+        for name, value in values.items():
+            monkeypatch.setenv(name.upper(), value)
+        get_settings.cache_clear()
+
+    return apply
 
 
 @pytest.fixture
@@ -75,13 +108,57 @@ def db(engine):
 
 
 @pytest.fixture
-def user(db):
+def client(engine):
+    """API 테스트용 TestClient — 앱의 DB 를 테스트 DB 로 바꿨다.
+
+    https 주소라 Secure 쿠키도 오간다(http 면 테스트 클라이언트가 Secure 쿠키를 보내지 않는다).
+    lifespan 은 돌리지 않는다 — 테이블은 engine 픽스처가 이미 만들었다.
+    """
+    from app.db.database import get_db
+    from app.main import create_app
+
+    def test_db():
+        with Session(engine, expire_on_commit=False) as session:
+            yield session
+
+    app = create_app()
+    app.dependency_overrides[get_db] = test_db
+    return TestClient(app, base_url="https://testserver")
+
+
+USER_PASSWORD = "password123"
+
+
+@pytest.fixture(scope="session")
+def _user_password_hash():
+    # Argon2 해싱은 한 번에 20ms 쯤 걸린다 — 테스트 실행 전체에서 한 번만 만든다
+    from app.auth.security import hash_password
+
+    return hash_password(USER_PASSWORD)
+
+
+@pytest.fixture
+def user_password():
+    """`user` 픽스처의 비밀번호 — 로그인 테스트용."""
+    return USER_PASSWORD
+
+
+@pytest.fixture
+def user(db, _user_password_hash):
     from app.db.models import User
 
-    user = User(username="sangwoo", password_hash="argon2-hash")
+    user = User(username="sangwoo", password_hash=_user_password_hash)
     db.add(user)
     db.commit()
     return user
+
+
+@pytest.fixture
+def auth_headers(user):
+    """`user` 로 로그인한 요청 헤더 — `client.get("/api/...", headers=auth_headers)`."""
+    from app.auth.security import create_access_token
+
+    return {"Authorization": f"Bearer {create_access_token(user.id)}"}
 
 
 @pytest.fixture

@@ -34,3 +34,11 @@ def test_startup_stops_without_database_url(database_url):
 
     with pytest.raises(RuntimeError, match="DATABASE_URL"), TestClient(create_app()):
         pass
+
+
+@pytest.mark.parametrize("secret", ["", "short-secret"])
+def test_startup_stops_without_usable_jwt_secret(configure, secret):
+    configure(jwt_secret=secret)
+
+    with pytest.raises(RuntimeError, match="JWT_SECRET"), TestClient(create_app()):
+        pass
