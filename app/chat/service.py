@@ -12,7 +12,7 @@ from starlette.concurrency import run_in_threadpool
 from app.chat import repository
 from app.chat.client import AIClientError, AIResult, OpenRouterClient
 from app.chat.context import Message, build_messages
-from app.chat.schemas import ChatResponse
+from app.chat.schemas import ChatResponse, ConversationListResponse, ConversationResponse
 from app.core.config import get_settings
 from app.core.errors import AppError, ErrorCode
 from app.core.logging import log_event
@@ -35,6 +35,19 @@ _AI_ERRORS = {
     "AI_ERROR": (502, ErrorCode.AI_ERROR, "AI 응답을 받지 못했습니다. 잠시 후 다시 시도해 주세요."),
 }
 DB_MESSAGE = "대화 기록을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요."
+
+
+def _room_list(db: Session, user_id: int) -> ConversationListResponse:
+    return ConversationListResponse(
+        items=[
+            ConversationResponse.model_validate(room)
+            for room in repository.list_conversations(db, user_id)
+        ]
+    )
+
+
+async def get_conversations(db: Session, user_id: int) -> ConversationListResponse:
+    return await _db_call("list_conversations", _room_list, db, user_id)
 
 
 def _app_ai_error(error: AIClientError) -> AppError:

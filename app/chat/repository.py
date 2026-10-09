@@ -100,3 +100,13 @@ def get_recent_chats(db: Session, conversation_id: int, limit: int) -> list[Chat
         )
     )
     return list(reversed(rows))
+
+
+def list_conversations(db: Session, user_id: int) -> list[Conversation]:
+    return list(
+        db.scalars(
+            select(Conversation)
+            .where(Conversation.user_id == user_id)
+            .order_by(Conversation.updated_at.desc(), Conversation.id.desc())
+        )
+    )
