@@ -1,13 +1,14 @@
 """대화방·대화 저장과 조회. HTTP 오류 변환은 service가 담당한다."""
 
 import logging
+from typing import Literal
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.core.logging import log_event
-from app.db.models import Conversation
+from app.db.models import Chat, Conversation
 
 logger = logging.getLogger(__name__)
 
@@ -39,3 +40,50 @@ def get_conversation(db: Session, conversation_id: int, user_id: int) -> Convers
             Conversation.id == conversation_id, Conversation.user_id == user_id
         )
     )
+
+
+def save_chat(
+    db: Session,
+    *,
+    conversation: Conversation,
+    question: str,
+    answer: str | None,
+    status: Literal["success", "failed"],
+    error_code: str | None = None,
+    model: str | None = None,
+    input_tokens: int | None = None,
+    output_tokens: int | None = None,
+    latency_ms: int | None = None,
+) -> Chat:
+    """대화방 주인의 ID를 사용하고 대화·방 시각을 함께 commit한다."""
+    conversation_id = conversation.id
+    chat = Chat(
+        user_id=conversation.user_id,
+        conversation_id=conversation_id,
+        question=question,
+        answer=answer,
+        status=status,
+        error_code=error_code,
+        model=model,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        latency_ms=latency_ms,
+    )
+    try:
+        db.add(chat)
+        conversation.updated_at = func.now()
+        db.commit()
+        db.refresh(chat)
+    except SQLAlchemyError as exc:
+        db.rollback()
+        log_event(
+            logger,
+            "db_save_failed",
+            logging.ERROR,
+            conversation_id=conversation_id,
+            operation="save_chat",
+            error_type=type(exc).__name__,
+        )
+        raise
+    log_event(logger, "db_save_success", conversation_id=conversation_id, chat_id=chat.id)
+    return chat
