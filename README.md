@@ -2,15 +2,17 @@
 
 Codyssey B7-1 팀 프로젝트입니다. FastAPI 웹 서비스에서 회원 인증, AI 질문·응답, 사용자별 대화 기록을 구현하고 외부 URL로 배포합니다.
 
-> 현재는 팀 작업을 위한 저장소만 준비되었습니다. 기능 구현과 배포 결과는 각 담당자의 PR에서 추가합니다.
+회원가입·로그인, 인증된 사용자용 채팅 API와 대화방 목록 API가 구현되어 있습니다. 웹 화면·내 기록 API·배포는 각 담당자의 PR에서 통합합니다.
+
+범용 챗봇으로 사용자가 질문하고 같은 대화방에서 후속 질문을 이어갈 수 있습니다. 핵심 흐름은 가입 → 로그인 → 질문 → 최근 대화 문맥으로 AI 응답 → DB 저장 → 응답 확인입니다.
 
 ## 팀 역할
 
 | 이름 | 역할 | 주 담당 |
 | --- | --- | --- |
 | 이동현 | PM | 이슈·PR·일정 관리, 통합 검증, 배포 조율, 제출 문서 |
-| 이상우 | 백엔드 A | ERD·DB, 회원가입·로그인, 대화 저장·조회 기반 |
-| 권현석 | 백엔드 B | 채팅 API, AI API 연동, 문맥 유지, 오류 처리 |
+| 이상우 | 백엔드 A | ERD·DB 연결·테이블, 회원가입·로그인·인증 |
+| 권현석 | 백엔드 B | 대화방·대화 repository, 채팅·대화방 목록 API, AI 호출·문맥·오류·로그·테스트 |
 | 우광택 | 프론트엔드 | 가입·로그인·채팅·기록 화면과 API 연결 |
 
 ## 협업 규칙
@@ -22,15 +24,15 @@ Codyssey B7-1 팀 프로젝트입니다. FastAPI 웹 서비스에서 회원 인�
 5. API 키와 실제 `.env`, 로컬 DB 파일은 커밋하지 않습니다.
 6. 브랜치·커밋·PR·리뷰·릴리스의 자세한 규칙은 [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md) 를 따릅니다.
 
-## 첫 작업
+## 구조·문서
 
-- 이동현: 이슈와 PR 운영, 평가·배포 일정 정리
-- 이상우: ERD·DB·인증 설계 이슈 작성
-- 권현석: AI 제공자·모델·문맥·타임아웃 설계 이슈 작성
-- 우광택: 화면 흐름과 API에 필요한 응답 필드 정리
-- 전원: 구현 전 API 형식과 DB 구조 합의
+`app/auth/`의 인증 → `app/chat/router.py`의 HTTP 입출력 → `service.py`의 문맥·AI·저장 흐름 → `repository.py` → PostgreSQL로 연결됩니다. AI 호출은 서버의 `client.py`에서 OpenRouter로 전송합니다.
 
-기능이 구현되면 이 README에 실행 방법, 환경 변수, API 명세, ERD, 배포 URL, DB 확인 방법과 개인별 완료 작업을 추가합니다.
+- API 명세·요청/응답 예시: 실행한 서버의 `/docs` (로컬 http://127.0.0.1:8000/docs)
+- ERD·인증·repository 설계: [이슈 #1](https://github.com/cdsy-b7-1-chatbot/web-ai-chatbot/issues/1), 테이블 정의 `app/db/models/`
+- 백엔드 B 구현·검증 방법: [채팅 기술 문서](docs/chat.md)
+- 사용자별 DB 확인: [확인용 SQL](scripts/check_chat_logs.sql)
+- `list_chats`와 `GET /api/me/chats`, 배포 URL·최종 팀 작업 요약 취합: PM 담당
 
 ## 로컬 개발 환경 (맥·Windows 공통)
 
@@ -78,3 +80,7 @@ Python 버전과 패키지 버전은 [uv](https://docs.astral.sh/uv/) 로 맞춥
 | `CHAT_MAX_QUESTION_LENGTH` | 앞뒤 공백 제거 후 질문의 최대 글자 수 | `5000` |
 | `OPENROUTER_SITE_URL` | 선택 헤더 `HTTP-Referer`. 비어 있으면 생략 | 없음 |
 | `OPENROUTER_SITE_NAME` | 선택 헤더 `X-OpenRouter-Title`. 비어 있으면 생략 | 없음 |
+
+## 백엔드 B 작업 요약
+
+권현석: 이슈 #9에 따라 대화방·대화 repository와 인증된 채팅/방 목록 API를 구현했습니다. 최근 성공 Q/A 5쌍으로 문맥을 구성하고 OpenRouter의 StreamLake 제공자만 호출합니다. 입력 검증, 전체 타임아웃, AI·DB 오류 응답, 요청 ID로 연결되는 이벤트 로그를 추가했습니다. 관련 자동 테스트와 실제 서버 확인 스크립트, 채팅 기술 문서를 작성했습니다. 실제 AI 성공 검증은 계정 크레딧·키 한도가 사용 가능한 환경에서 확인해야 합니다.
