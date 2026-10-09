@@ -102,3 +102,28 @@ def test_save_failure_rolls_back_room_update_and_session_remains_usable(db, conv
         ).id
         is not None
     )
+
+
+@pytest.mark.parametrize("operation", ["create", "save"])
+def test_refresh_failure_occurs_before_commit_and_rolls_back(db, user, monkeypatch, operation):
+    room = repository.create_conversation(db, user.id, "기존 방")
+    room.updated_at = datetime(2000, 1, 1, tzinfo=UTC)
+    db.commit()
+    room_id = room.id
+
+    def fail_refresh(*args, **kwargs):
+        raise SQLAlchemyError("private-refresh-error")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(db, "refresh", fail_refresh)
+        with pytest.raises(SQLAlchemyError):
+            if operation == "create":
+                repository.create_conversation(db, user.id, "저장되면 안 되는 방")
+            else:
+                repository.save_chat(
+                    db, conversation=room, question="질문", answer="답변", status="success"
+                )
+    assert len(list(db.scalars(select(Conversation)))) == 1
+    assert list(db.scalars(select(Chat))) == []
+    db.refresh(db.get(Conversation, room_id))
+    assert db.get(Conversation, room_id).updated_at.year == 2000

@@ -17,8 +17,11 @@ def create_conversation(db: Session, user_id: int, title: str) -> Conversation:
     conversation = Conversation(user_id=user_id, title=title)
     try:
         db.add(conversation)
-        db.commit()
+        # 생성 시각 등 DB 기본값 조회도 commit 전에 끝내야 조회 실패 시 함께 rollback할 수 있다.
+        db.flush()
         db.refresh(conversation)
+        conversation_id = conversation.id
+        db.commit()
     except SQLAlchemyError as exc:
         db.rollback()
         # DB 예외 원문에는 접속 정보와 질문이 포함될 수 있어 종류만 남긴다.
@@ -30,7 +33,7 @@ def create_conversation(db: Session, user_id: int, title: str) -> Conversation:
             error_type=type(exc).__name__,
         )
         raise
-    log_event(logger, "conversation_created", conversation_id=conversation.id)
+    log_event(logger, "conversation_created", conversation_id=conversation_id)
     return conversation
 
 
@@ -72,8 +75,10 @@ def save_chat(
     try:
         db.add(chat)
         conversation.updated_at = func.now()
-        db.commit()
+        db.flush()
         db.refresh(chat)
+        chat_id = chat.id
+        db.commit()
     except SQLAlchemyError as exc:
         db.rollback()
         log_event(
@@ -85,7 +90,7 @@ def save_chat(
             error_type=type(exc).__name__,
         )
         raise
-    log_event(logger, "db_save_success", conversation_id=conversation_id, chat_id=chat.id)
+    log_event(logger, "db_save_success", conversation_id=conversation_id, chat_id=chat_id)
     return chat
 
 
