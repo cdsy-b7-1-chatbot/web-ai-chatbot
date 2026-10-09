@@ -73,6 +73,6 @@ uv run python scripts/smoke_chat.py --base-url http://127.0.0.1:8000
 
 가입 → 로그인 → 새 질문 → 같은 방에서 별명 기억 확인 → 방 목록 확인을 수행합니다. 출력에는 ID·검증 결과·요청 ID만 포함합니다. `--result <경로>`로 키·토큰 없는 JSON 증빙을 저장할 수 있습니다. 기록 내용은 `scripts/check_chat_logs.sql`로 사용자별 확인합니다.
 
-2026-10-09 검증: SQLite 전체 테스트와 PostgreSQL 전체 테스트, Ruff 통과. 실제 PostgreSQL 서버에서 가입·로그인·AI 실패의 502 응답 및 실패 기록 저장, 확인용 SQL 실행, PostgreSQL·앱 재시작 후 기록 유지를 확인했습니다. 실제 AI 성공·문맥 확인은 OpenRouter가 HTTP 402로 거절하여 미완료이며, 사용 가능한 크레딧·키 한도로 위 스크립트를 다시 실행해야 합니다.
+2026-10-09 검증: SQLite 213 passed·2 skipped(PostgreSQL 전용), PostgreSQL 215 passed, Ruff 통과. 실제 서버에서 가입·로그인 → StreamLake 지정 OpenRouter 응답 → 같은 방의 후속 질문에서 별명 기억 → 대화방 목록 확인을 통과했습니다. 두 성공 기록의 사용자·방·모델·토큰·AI 소요 시간이 PostgreSQL에 저장된 것을 직접 조회했습니다. AI 실패의 502 응답·실패 기록 저장, 확인용 SQL 실행, PostgreSQL·앱 재시작 후 기록 유지도 확인했습니다. 처음 발생한 HTTP 402는 계정 크레딧 충전 후 해결되었습니다.
 
 첫 버전은 RAG·스트리밍·대화 삭제·중복 요청 방지를 포함하지 않습니다.
