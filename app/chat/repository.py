@@ -87,3 +87,16 @@ def save_chat(
         raise
     log_event(logger, "db_save_success", conversation_id=conversation_id, chat_id=chat.id)
     return chat
+
+
+def get_recent_chats(db: Session, conversation_id: int, limit: int) -> list[Chat]:
+    # 오름차순으로 LIMIT하면 가장 오래된 기록이 선택되므로 최신 N개를 먼저 고른다.
+    rows = list(
+        db.scalars(
+            select(Chat)
+            .where(Chat.conversation_id == conversation_id, Chat.status == "success")
+            .order_by(Chat.created_at.desc(), Chat.id.desc())
+            .limit(limit)
+        )
+    )
+    return list(reversed(rows))
