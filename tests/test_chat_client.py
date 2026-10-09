@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 
 import httpx
 import pytest
@@ -93,3 +94,67 @@ def test_invalid_response_is_a_safe_domain_error(body):
 def test_invalid_json_is_rejected():
     with pytest.raises(AIClientError):
         call_client(lambda _: httpx.Response(200, text="not-json"))
+
+
+@pytest.mark.parametrize("key", [None, "", "   "])
+def test_missing_key_never_calls_upstream(key):
+    def handle(_):
+        pytest.fail("키가 없으면 요청하면 안 된다")
+
+    client = OpenRouterClient(
+        Settings(openrouter_api_key=key), transport=httpx.MockTransport(handle)
+    )
+    with pytest.raises(AIClientError, match="AI_NOT_CONFIGURED"):
+        asyncio.run(client.generate(MESSAGES))
+
+
+@pytest.mark.parametrize("status", [400, 401, 402, 429, 500, 502, 503])
+def test_http_errors_are_safe_and_not_retried(status, caplog):
+    calls = []
+
+    def handle(request):
+        calls.append(request)
+        return httpx.Response(status, json={"error": {"message": "private-provider-text"}})
+
+    with pytest.raises(AIClientError, match="AI_ERROR"):
+        call_client(handle)
+    assert len(calls) == 1
+    assert "private-provider-text" not in caplog.text
+    assert "test-secret" not in caplog.text
+    assert "ai_call_failed" in caplog.text
+
+
+def test_total_timeout_applies_even_when_transport_has_no_timeout():
+    async def handle(_):
+        await asyncio.sleep(0.1)
+        return httpx.Response(200, json=completion())
+
+    with pytest.raises(AIClientError, match="AI_TIMEOUT"):
+        call_client(handle, ai_timeout_seconds=0.01)
+
+
+def test_httpx_timeout_is_mapped():
+    def handle(request):
+        raise httpx.ReadTimeout("private-transport-message", request=request)
+
+    with pytest.raises(AIClientError, match="AI_TIMEOUT"):
+        call_client(handle)
+
+
+def test_network_failure_is_mapped():
+    def handle(request):
+        raise httpx.ConnectError("private-transport-message", request=request)
+
+    with pytest.raises(AIClientError, match="AI_ERROR"):
+        call_client(handle)
+
+
+def test_success_logs_metadata_without_secret_or_content(caplog):
+    caplog.set_level(logging.INFO)
+    call_client(lambda _: httpx.Response(200, json=completion()))
+    assert "ai_call_start" in caplog.text
+    assert "ai_call_success" in caplog.text
+    assert "provider=streamlake" in caplog.text
+    assert "test-secret" not in caplog.text
+    assert "질문" not in caplog.text
+    assert "답변" not in caplog.text

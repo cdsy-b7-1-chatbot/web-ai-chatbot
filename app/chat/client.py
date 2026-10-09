@@ -1,5 +1,8 @@
 """OpenRouter 호출 경계 — 제공자 설정·응답 해석을 채팅 로직에서 분리한다."""
 
+import asyncio
+import logging
+import time
 from dataclasses import dataclass
 from typing import Literal
 
@@ -8,9 +11,11 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from app.chat.context import Message
 from app.core.config import Settings, get_settings
+from app.core.logging import log_event
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 PROVIDER = "streamlake"
+logger = logging.getLogger(__name__)
 
 
 class AIClientError(Exception):
@@ -79,6 +84,41 @@ class OpenRouterClient:
         return headers
 
     async def generate(self, messages: list[Message]) -> AIResult:
+        self.ensure_configured()
+        started = time.perf_counter()
+        log_event(logger, "ai_call_start", model=self.settings.ai_model, provider=PROVIDER)
+        try:
+            # HTTPX의 read timeout은 읽기 사이의 제한이다. 전체 호출 제한을 별도로 둔다.
+            async with asyncio.timeout(self.settings.ai_timeout_seconds):
+                result = await self._request(messages)
+        except (TimeoutError, httpx.TimeoutException):
+            error = AIClientError("AI_TIMEOUT")
+        except (httpx.HTTPError, AIClientError, ValueError):
+            error = AIClientError("AI_ERROR")
+        else:
+            log_event(
+                logger,
+                "ai_call_success",
+                model=result.model,
+                provider=PROVIDER,
+                latency_ms=round((time.perf_counter() - started) * 1000),
+                input_tokens=result.input_tokens,
+                output_tokens=result.output_tokens,
+                truncated=result.truncated,
+            )
+            return result
+        log_event(
+            logger,
+            "ai_call_failed",
+            logging.WARNING,
+            model=self.settings.ai_model,
+            provider=PROVIDER,
+            error_code=error.code,
+            latency_ms=round((time.perf_counter() - started) * 1000),
+        )
+        raise error from None
+
+    async def _request(self, messages: list[Message]) -> AIResult:
         payload = {
             "model": self.settings.ai_model,
             "messages": messages,
