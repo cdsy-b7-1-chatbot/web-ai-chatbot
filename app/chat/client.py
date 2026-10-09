@@ -19,10 +19,16 @@ logger = logging.getLogger(__name__)
 
 
 class AIClientError(Exception):
-    def __init__(self, code: Literal["AI_ERROR", "AI_TIMEOUT", "AI_NOT_CONFIGURED"]) -> None:
+    def __init__(
+        self,
+        code: Literal["AI_ERROR", "AI_TIMEOUT", "AI_NOT_CONFIGURED"],
+        *,
+        upstream_status: int | None = None,
+    ) -> None:
         # 외부 오류 원문을 보관하지 않아 상위 로그에도 키·본문이 섞이지 않게 한다.
         super().__init__(code)
         self.code = code
+        self.upstream_status = upstream_status
 
 
 @dataclass(frozen=True)
@@ -93,6 +99,9 @@ class OpenRouterClient:
                 result = await self._request(messages)
         except (TimeoutError, httpx.TimeoutException):
             error = AIClientError("AI_TIMEOUT")
+        except httpx.HTTPStatusError as exc:
+            # 응답 본문 대신 상태 코드만 남겨 크레딧 부족·인증·제공자 장애를 구분한다.
+            error = AIClientError("AI_ERROR", upstream_status=exc.response.status_code)
         except (httpx.HTTPError, AIClientError, ValueError):
             error = AIClientError("AI_ERROR")
         else:
@@ -114,6 +123,7 @@ class OpenRouterClient:
             model=self.settings.ai_model,
             provider=PROVIDER,
             error_code=error.code,
+            upstream_status=error.upstream_status,
             latency_ms=round((time.perf_counter() - started) * 1000),
         )
         raise error from None

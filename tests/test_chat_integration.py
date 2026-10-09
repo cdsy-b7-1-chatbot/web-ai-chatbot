@@ -198,3 +198,15 @@ def test_chat_openapi_declares_examples_and_error_models(client):
                 "application/json"
             ]["schema"]
             assert response_schema == {"$ref": "#/components/schemas/ErrorResponse"}
+
+
+def test_credit_error_logs_only_upstream_status(client, configure, auth_headers, caplog):
+    install_ai(
+        client, configure, lambda request: httpx.Response(402, text="private-credit-details")
+    )
+    response = client.post("/api/chat", headers=auth_headers, json={"question": "질문"})
+    assert response.status_code == 502
+    assert response.json()["error"] == "AI_ERROR"
+    logs = "\n".join(events(caplog))
+    assert "upstream_status=402" in logs
+    assert "private-credit-details" not in logs + response.text
