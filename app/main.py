@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict
 from app.auth.dependencies import user_id_from_request
 from app.auth.router import router as auth_router
 from app.auth.security import ensure_jwt_secret
+from app.chat.router import router as chat_router
 from app.core.config import get_settings
 from app.core.errors import register_exception_handlers
 from app.core.logging import setup_logging
@@ -60,6 +61,7 @@ def create_app() -> FastAPI:
 
     # 영역별 라우터 — 각자 한 줄씩 추가한다(CONTRIBUTING 2장)
     app.include_router(auth_router)
+    app.include_router(chat_router)
 
     return app
 
