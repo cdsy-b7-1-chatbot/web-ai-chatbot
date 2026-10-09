@@ -5,6 +5,7 @@ description = "FastAPI 웹 AI 챗봇 서비스 (Codyssey B7-1 팀 프로젝트)"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.142.2",
+    "httpx>=0.28.1",
     "psycopg[binary]>=3.2",
     "pwdlib[argon2]>=0.3.1",
     "pydantic-settings>=2.15.0",

@@ -70,3 +70,11 @@ Python 버전과 패키지 버전은 [uv](https://docs.astral.sh/uv/) 로 맞춥
 | `COOKIE_SECURE` | 로그인 쿠키를 https 로만 보내게 할지. 로컬 http 개발에서만 `false` | `true` |
 | `CORS_ORIGINS` | 프론트를 다른 주소에 따로 배포할 때 그 주소. 여러 개는 쉼표로 | 없음 — 같은 주소에서만 호출 가능 |
 | `TEST_DATABASE_URL` | 테스트 전용. 주면 테스트를 이 Postgres 로 돌린다. `.env` 에서는 읽지 않으니 명령 앞에 붙인다. 테스트가 테이블을 지우므로 DB 이름에 `test` 가 들어가야 한다 | 없음 — 메모리 SQLite |
+| `OPENROUTER_API_KEY` | 서버의 OpenRouter 인증 키. 미설정 시 채팅 요청에 503을 반환한다 | 없음 |
+| `AI_MODEL` | OpenRouter 모델 ID. StreamLake 제공자만 사용하며 다른 제공자로 fallback하지 않는다 | `qwen/qwen3-30b-a3b-instruct-2507` |
+| `AI_TIMEOUT_SECONDS` | AI 호출 전체 제한 시간(초), 앱의 자동 재시도 없음 | `30` |
+| `AI_MAX_OUTPUT_TOKENS` | 답변의 최대 생성 토큰 수 | `1024` |
+| `CHAT_CONTEXT_PAIRS` | 같은 방에서 문맥에 포함할 최근 성공 질문·답변 쌍 수 | `5` |
+| `CHAT_MAX_QUESTION_LENGTH` | 앞뒤 공백 제거 후 질문의 최대 글자 수 | `5000` |
+| `OPENROUTER_SITE_URL` | 선택 헤더 `HTTP-Referer`. 비어 있으면 생략 | 없음 |
+| `OPENROUTER_SITE_NAME` | 선택 헤더 `X-OpenRouter-Title`. 비어 있으면 생략 | 없음 |

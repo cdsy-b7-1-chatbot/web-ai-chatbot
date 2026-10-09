@@ -28,6 +28,16 @@ _backend = _url.get_backend_name()
 TEST_JWT_SECRET = "test-only-jwt-secret-0123456789abcdef"
 # 인증 설정 — 개발자 셸에 export 된 값도 테스트에 섞이지 않게 지운다
 _AUTH_ENV = ("JWT_SECRET", "JWT_EXPIRE_MINUTES", "COOKIE_SECURE", "CORS_ORIGINS")
+_AI_ENV = (
+    "OPENROUTER_API_KEY",
+    "AI_MODEL",
+    "AI_TIMEOUT_SECONDS",
+    "AI_MAX_OUTPUT_TOKENS",
+    "CHAT_CONTEXT_PAIRS",
+    "CHAT_MAX_QUESTION_LENGTH",
+    "OPENROUTER_SITE_URL",
+    "OPENROUTER_SITE_NAME",
+)
 
 
 def pytest_configure(config):
@@ -58,7 +68,7 @@ def pytest_collection_modifyitems(config, items):
 def _test_settings(monkeypatch):
     """모든 테스트에 적용 — 개발자의 `.env`(예: COOKIE_SECURE=false)에 따라 결과가 달라지지 않게 한다."""
     monkeypatch.setitem(Settings.model_config, "env_file", None)
-    for name in _AUTH_ENV:
+    for name in (*_AUTH_ENV, *_AI_ENV):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("JWT_SECRET", TEST_JWT_SECRET)
     get_settings.cache_clear()
