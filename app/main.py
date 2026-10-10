@@ -2,9 +2,12 @@
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict
 
 from app.auth.dependencies import user_id_from_request
@@ -17,6 +20,8 @@ from app.core.logging import setup_logging
 from app.core.middleware import REQUEST_ID_HEADER, RequestContextMiddleware
 from app.core.openapi import app_openapi_options, use_error_response_for_validation
 from app.db.database import get_engine, init_db
+
+FRONTEND_DIRECTORY = Path(__file__).resolve().parent.parent / "frontend"
 
 
 @asynccontextmanager
@@ -53,6 +58,14 @@ def create_app() -> FastAPI:
         )
     register_exception_handlers(app)
     use_error_response_for_validation(app)
+
+    # API와 같은 출처에서 화면을 제공해 인증 쿠키를 별도 설정 없이 보낼 수 있게 한다.
+    app.mount("/static", StaticFiles(directory=FRONTEND_DIRECTORY), name="static")
+
+    @app.get("/", include_in_schema=False)
+    def frontend() -> FileResponse:
+        """브라우저 진입점은 API 문서와 분리해 정적 HTML로 제공한다."""
+        return FileResponse(FRONTEND_DIRECTORY / "index.html")
 
     @app.get("/api/health")
     def health() -> HealthResponse:
