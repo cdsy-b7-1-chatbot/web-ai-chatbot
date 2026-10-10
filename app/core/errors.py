@@ -37,6 +37,10 @@ class ErrorCode(StrEnum):
     VALIDATION_ERROR = "VALIDATION_ERROR"
     USERNAME_TAKEN = "USERNAME_TAKEN"
     INVALID_CREDENTIALS = "INVALID_CREDENTIALS"
+    AI_NOT_CONFIGURED = "AI_NOT_CONFIGURED"
+    AI_TIMEOUT = "AI_TIMEOUT"
+    AI_ERROR = "AI_ERROR"
+    DB_ERROR = "DB_ERROR"
     HTTP_ERROR = "HTTP_ERROR"
     INTERNAL_ERROR = "INTERNAL_ERROR"
 
@@ -51,6 +55,10 @@ ERROR_CODE_DOCS: dict[ErrorCode, str] = {
     ErrorCode.VALIDATION_ERROR: "422 — 입력값 검증 실패. 어느 필드가 틀렸는지는 서버 로그에만 남는다",
     ErrorCode.USERNAME_TAKEN: "409 — 회원가입: 이미 쓰고 있는 아이디(대소문자 구분 없음)",
     ErrorCode.INVALID_CREDENTIALS: "401 — 로그인: 아이디 또는 비밀번호가 틀림(어느 쪽인지 알려주지 않음)",
+    ErrorCode.AI_NOT_CONFIGURED: "503 — AI 호출 설정이 준비되지 않음",
+    ErrorCode.AI_TIMEOUT: "504 — AI 응답 대기 시간 초과",
+    ErrorCode.AI_ERROR: "502 — AI 호출 실패 또는 유효하지 않은 응답",
+    ErrorCode.DB_ERROR: "500 — DB 조회·생성·저장 실패",
     ErrorCode.HTTP_ERROR: "그 밖의 HTTP 오류",
     ErrorCode.INTERNAL_ERROR: "500 — 처리되지 않은 서버 오류. 원인은 서버 로그에만 남는다",
 }
@@ -74,6 +82,8 @@ _STATUS_DESCRIPTIONS: dict[int, str] = {
     409: "이미 존재함",
     422: "입력값 검증 실패",
     500: "서버 오류",
+    502: "AI 서비스 오류",
+    503: "AI 설정 미준비",
     504: "외부 서비스 응답 지연",
 }
 
