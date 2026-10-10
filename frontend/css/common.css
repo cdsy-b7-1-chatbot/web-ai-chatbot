@@ -1,0 +1,67 @@
+:root {
+  color: #172033;
+  background: #f6f8fc;
+  font-family: "Noto Sans KR", system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+.app-shell {
+  display: grid;
+  gap: 1.5rem;
+  min-height: 100vh;
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 4rem 1.5rem;
+  align-content: center;
+}
+
+.eyebrow {
+  margin: 0 0 0.75rem;
+  color: #596780;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 0.75rem;
+  font-size: clamp(2rem, 7vw, 3.5rem);
+  line-height: 1.2;
+}
+
+.description {
+  margin-bottom: 0;
+  color: #526078;
+}
+
+.status-card {
+  padding: 1.5rem;
+  border: 1px solid #d9dfeb;
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 12px 30px rgb(31 45 70 / 8%);
+}
+
+.status-card h2 {
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.status-card p {
+  margin-bottom: 0;
+  color: #33466d;
+}
