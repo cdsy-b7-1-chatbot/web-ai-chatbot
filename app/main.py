@@ -17,6 +17,7 @@ from app.core.logging import setup_logging
 from app.core.middleware import REQUEST_ID_HEADER, RequestContextMiddleware
 from app.core.openapi import app_openapi_options, use_error_response_for_validation
 from app.db.database import get_engine, init_db
+from app.history.router import router as history_router
 
 
 @asynccontextmanager
@@ -62,6 +63,7 @@ def create_app() -> FastAPI:
     # 영역별 라우터 — 각자 한 줄씩 추가한다(CONTRIBUTING 2장)
     app.include_router(auth_router)
     app.include_router(chat_router)
+    app.include_router(history_router)
 
     return app
 
