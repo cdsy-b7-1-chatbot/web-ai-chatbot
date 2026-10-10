@@ -2,7 +2,7 @@
 
 Codyssey B7-1 팀 프로젝트입니다. FastAPI 웹 서비스에서 회원 인증, AI 질문·응답, 사용자별 대화 기록을 구현하고 외부 URL로 배포합니다.
 
-회원가입·로그인, 인증된 사용자용 채팅 API와 대화방 목록 API가 구현되어 있습니다. 웹 화면·내 기록 API·배포는 각 담당자의 PR에서 통합합니다.
+회원가입·로그인, 인증된 사용자용 채팅·대화방 목록·내 기록 조회 API가 구현되어 있습니다. 웹 화면과 배포는 각 담당자의 PR에서 통합합니다.
 
 범용 챗봇으로 사용자가 질문하고 같은 대화방에서 후속 질문을 이어갈 수 있습니다. 핵심 흐름은 가입 → 로그인 → 질문 → 최근 대화 문맥으로 AI 응답 → DB 저장 → 응답 확인입니다.
 
@@ -10,7 +10,7 @@ Codyssey B7-1 팀 프로젝트입니다. FastAPI 웹 서비스에서 회원 인�
 
 | 이름 | 역할 | 주 담당 |
 | --- | --- | --- |
-| 이동현 | PM | 이슈·PR·일정 관리, 통합 검증, 배포 조율, 제출 문서 |
+| 이동현 | PM | 내 기록 조회 API, 이슈·PR·일정 관리, 통합 검증, 배포 조율, 제출 문서 |
 | 이상우 | 백엔드 A | ERD·DB 연결·테이블, 회원가입·로그인·인증 |
 | 권현석 | 백엔드 B | 대화방·대화 repository, 채팅·대화방 목록 API, AI 호출·문맥·오류·로그·테스트 |
 | 우광택 | 프론트엔드 | 가입·로그인·채팅·기록 화면과 API 연결 |
@@ -31,8 +31,9 @@ Codyssey B7-1 팀 프로젝트입니다. FastAPI 웹 서비스에서 회원 인�
 - API 명세·요청/응답 예시: 실행한 서버의 `/docs` (로컬 http://127.0.0.1:8000/docs)
 - ERD·인증·repository 설계: [이슈 #1](https://github.com/cdsy-b7-1-chatbot/web-ai-chatbot/issues/1), 테이블 정의 `app/db/models/`
 - 백엔드 B 구현·검증 방법: [채팅 기술 문서](docs/chat.md)
+- 내 전체·대화방별 기록 조회 및 프론트 연결: [기록 조회 API](docs/history.md)
 - 사용자별 DB 확인: [확인용 SQL](scripts/check_chat_logs.sql)
-- `list_chats`와 `GET /api/me/chats`, 배포 URL·최종 팀 작업 요약 취합: PM 담당
+- `app/history/`의 `list_chats`와 `GET /api/me/chats`, 배포 URL·최종 팀 작업 요약 취합: PM 담당
 
 ## 로컬 개발 환경 (맥·Windows 공통)
 
@@ -80,6 +81,10 @@ Python 버전과 패키지 버전은 [uv](https://docs.astral.sh/uv/) 로 맞춥
 | `CHAT_MAX_QUESTION_LENGTH` | 앞뒤 공백 제거 후 질문의 최대 글자 수 | `5000` |
 | `OPENROUTER_SITE_URL` | 선택 헤더 `HTTP-Referer`. 비어 있으면 생략 | 없음 |
 | `OPENROUTER_SITE_NAME` | 선택 헤더 `X-OpenRouter-Title`. 비어 있으면 생략 | 없음 |
+
+## PM 기록 조회 작업 요약
+
+이동현: 이슈 #1·#11의 분담에 따라 내 전체·선택한 대화방의 기록 조회 API를 구현했습니다. 기존 인증·ORM 모델을 사용하며 사용자 범위, 대화방 소유권, 실패 이력, 최신순 정렬과 페이지 처리를 적용했습니다. 조회에는 AI 키가 필요하지 않습니다. 관련 자동 테스트와 프론트 연결 명세는 [기록 조회 문서](docs/history.md)에 정리했습니다.
 
 ## 백엔드 B 작업 요약
 
