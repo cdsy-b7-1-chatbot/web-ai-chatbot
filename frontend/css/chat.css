@@ -1,1 +1,56 @@
-/* 채팅과 대화 목록 화면은 다음 단계에서 이 파일에 추가한다. */
+.chat-card {
+  padding: 1.5rem;
+  border: 1px solid #d9dfeb;
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 12px 30px rgb(31 45 70 / 8%);
+}
+
+.chat-messages {
+  display: grid;
+  gap: 0.75rem;
+  min-height: 8rem;
+  margin: 1.5rem 0;
+}
+
+.chat-bubble {
+  max-width: 85%;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  white-space: pre-wrap;
+}
+
+.chat-bubble[data-role="user"] {
+  justify-self: end;
+  background: #e8eefc;
+}
+
+.chat-bubble[data-role="assistant"] {
+  justify-self: start;
+  background: #f1f4f8;
+}
+
+.chat-form {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.chat-form textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+.chat-form button,
+#logout-button {
+  justify-self: start;
+}
+
+.chat-message {
+  min-height: 1.5rem;
+  margin: 0.75rem 0;
+  color: #526078;
+}
+
+.chat-message[data-state="error"] {
+  color: #a01c1c;
+}
