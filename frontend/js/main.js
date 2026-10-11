@@ -3,6 +3,7 @@ import { getCurrentUser, logout } from "./api/api.js";
 import { ApiError } from "./api/errors.js";
 import { initializeChat } from "./chat.js";
 import { initializeHistory } from "./history.js";
+import { getRequestErrorMessage } from "./request-error.js";
 
 export const AUTH_STATES = {
   CHECKING: "checking",
@@ -10,14 +11,6 @@ export const AUTH_STATES = {
   UNAUTHENTICATED: "unauthenticated",
   ERROR: "error",
 };
-
-function getAuthCheckErrorMessage(error) {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  return "네트워크 오류가 발생했습니다. 연결을 확인한 뒤 다시 시도해 주세요.";
-}
 
 /**
  * 서버의 현재 사용자 응답만으로 인증 상태를 정한다. 쿠키와 토큰 값은 화면 코드에서 다루지 않는다.
@@ -136,7 +129,7 @@ export async function initializeApplication({
           return;
         }
 
-        renderAuthState(AUTH_STATES.ERROR, null, getAuthCheckErrorMessage(error));
+        renderAuthState(AUTH_STATES.ERROR, null, getRequestErrorMessage(error));
       })
       .finally(() => {
         authenticationRequest = null;

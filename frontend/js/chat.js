@@ -1,16 +1,10 @@
 import { getChatHistory, sendChat } from "./api/api.js";
-import { ApiError } from "./api/errors.js";
+import { getRequestErrorMessage } from "./request-error.js";
 
 const HISTORY_PAGE_SIZE = 20;
 const QUESTION_MAX_HEIGHT = 176;
 
-export function getChatErrorMessage(error) {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  return "네트워크 오류가 발생했습니다. 연결을 확인한 뒤 다시 시도해 주세요.";
-}
+export const getChatErrorMessage = getRequestErrorMessage;
 
 /**
  * 채팅 화면의 입력·표시 상태만 관리하고, 인증 전환 같은 전역 상태는 main.js에 맡긴다.

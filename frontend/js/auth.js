@@ -1,5 +1,5 @@
 import { login, signup } from "./api/api.js";
-import { ApiError } from "./api/errors.js";
+import { getRequestErrorMessage } from "./request-error.js";
 
 const USERNAME_PATTERN = /^[A-Za-z0-9_]{3,20}$/;
 const PASSWORD_MIN_LENGTH = 8;
@@ -25,13 +25,7 @@ export function validateLogin(username, password) {
   return null;
 }
 
-export function getAuthErrorMessage(error) {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  return "네트워크 오류가 발생했습니다. 연결을 확인한 뒤 다시 시도해 주세요.";
-}
+export const getAuthErrorMessage = getRequestErrorMessage;
 
 /**
  * 인증 폼의 DOM과 로컬 요청 상태만 관리한다. 로그인 이후 화면 전환은 상위 모듈이 맡는다.

@@ -1,13 +1,7 @@
 import { getConversations } from "./api/api.js";
-import { ApiError } from "./api/errors.js";
+import { getRequestErrorMessage } from "./request-error.js";
 
-function getHistoryErrorMessage(error) {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  return "네트워크 오류가 발생했습니다. 연결을 확인한 뒤 다시 시도해 주세요.";
-}
+const getHistoryErrorMessage = getRequestErrorMessage;
 
 /**
  * 목록의 조회·선택 표시만 맡기고, 선택한 방의 기록 표시와 채팅 상태는 상위 조정 모듈에 알린다.
