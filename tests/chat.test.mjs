@@ -4,6 +4,8 @@ import test from "node:test";
 class FakeElement {
   constructor() {
     this.dataset = {};
+    this.style = {};
+    this.scrollHeight = 0;
     this.disabled = false;
     this.textContent = "";
     this.value = "";
@@ -36,7 +38,7 @@ class FakeElement {
 }
 
 function createChatDocument() {
-  const ids = ["chat-form", "chat-question", "chat-submit", "new-chat-button", "load-more-history", "chat-messages", "chat-message"];
+  const ids = ["chat-form", "chat-question", "chat-submit", "new-chat-button", "load-more-history", "chat-messages", "chat-empty-state", "chat-message"];
   const elements = Object.fromEntries(ids.map((id) => [id, new FakeElement()]));
   return {
     querySelector(selector) {
@@ -61,6 +63,15 @@ async function trigger(element) {
 
 async function click(element) {
   await Promise.all((element.listeners.get("click") ?? []).map((listener) => listener()));
+}
+
+async function keydown(element, options) {
+  let prevented = false;
+  for (const listener of element.listeners.get("keydown") ?? []) {
+    listener({ preventDefault: () => { prevented = true; }, ...options });
+  }
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  return prevented;
 }
 
 delete globalThis.document;
@@ -89,6 +100,8 @@ test("질문을 전송하면 사용자 질문과 AI 답변을 순서대로 표�
     [["user", "질문입니다"], ["assistant", "AI 답변"]],
   );
   assert.equal(chatDocument.elements["chat-submit"].disabled, false);
+  assert.equal(chatDocument.elements["chat-messages"].dataset.hasMessages, "true");
+  assert.equal(chatDocument.elements["chat-empty-state"].hidden, true);
 });
 
 test("첫 응답의 대화방 ID를 후속 질문에 사용하고 새 대화에서는 초기화한다", async () => {
@@ -118,7 +131,32 @@ test("첫 응답의 대화방 ID를 후속 질문에 사용하고 새 대화에�
   await click(chatDocument.elements["new-chat-button"]);
   assert.equal(conversationId, null);
   assert.equal(chatDocument.elements["chat-messages"].children.length, 0);
+  assert.equal(chatDocument.elements["chat-messages"].dataset.hasMessages, "false");
+  assert.equal(chatDocument.elements["chat-empty-state"].hidden, false);
   assert.equal(chatDocument.elements["chat-question"].focused, true);
+});
+
+test("Enter는 전송하고 Shift+Enter는 줄바꿈 입력을 유지한다", async () => {
+  const chatDocument = createChatDocument();
+  globalThis.document = chatDocument;
+  const requests = [];
+  initializeChat({
+    chatApi: {
+      sendChat: async (question) => {
+        requests.push(question);
+        return { answer: "답변", conversation_id: 1, truncated: false };
+      },
+    },
+  });
+
+  const input = chatDocument.elements["chat-question"];
+  input.value = "전송할 질문";
+  assert.equal(await keydown(input, { key: "Enter", shiftKey: false }), true);
+  assert.deepEqual(requests, ["전송할 질문"]);
+
+  input.value = "줄바꿈 질문";
+  assert.equal(await keydown(input, { key: "Enter", shiftKey: true }), false);
+  assert.deepEqual(requests, ["전송할 질문"]);
 });
 
 test("빈 질문·HTTP 오류·네트워크 오류를 안내하고 재전송을 허용한다", async () => {

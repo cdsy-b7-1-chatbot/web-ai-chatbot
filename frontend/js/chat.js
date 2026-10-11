@@ -2,6 +2,7 @@ import { getChatHistory, sendChat } from "./api/api.js";
 import { ApiError } from "./api/errors.js";
 
 const HISTORY_PAGE_SIZE = 20;
+const QUESTION_MAX_HEIGHT = 176;
 
 export function getChatErrorMessage(error) {
   if (error instanceof ApiError) {
@@ -27,6 +28,7 @@ export function initializeChat({
   const newChatButton = document.querySelector("#new-chat-button");
   const loadMoreButton = document.querySelector("#load-more-history");
   const messages = document.querySelector("#chat-messages");
+  const emptyState = document.querySelector("#chat-empty-state");
   const message = document.querySelector("#chat-message");
 
   if (!form || !questionInput || !submitButton || !newChatButton || !loadMoreButton || !messages || !message) {
@@ -50,12 +52,33 @@ export function initializeChat({
     messages.setAttribute("aria-busy", String(isBusy));
   }
 
+  function setHasMessages(hasMessages) {
+    messages.dataset.hasMessages = String(hasMessages);
+    if (emptyState) {
+      emptyState.hidden = hasMessages;
+    }
+  }
+
+  function resizeQuestionInput() {
+    if (!questionInput.style) {
+      return;
+    }
+
+    questionInput.style.height = "auto";
+    const contentHeight = questionInput.scrollHeight ?? 0;
+    if (contentHeight > 0) {
+      questionInput.style.height = `${Math.min(contentHeight, QUESTION_MAX_HEIGHT)}px`;
+    }
+    questionInput.style.overflowY = contentHeight > QUESTION_MAX_HEIGHT ? "auto" : "hidden";
+  }
+
   function appendBubble(role, text) {
     const bubble = document.createElement("p");
     bubble.className = "chat-bubble";
     bubble.dataset.role = role;
     bubble.textContent = text;
     messages.append(bubble);
+    setHasMessages(true);
   }
 
   function reset() {
@@ -67,9 +90,11 @@ export function initializeChat({
     loadedConversationId = null;
     hasMoreHistory = false;
     messages.replaceChildren();
+    setHasMessages(false);
     setMessagesBusy(false);
     loadMoreButton.hidden = true;
     questionInput.value = "";
+    resizeQuestionInput();
     questionInput.disabled = false;
     submitButton.disabled = false;
     setMessage("");
@@ -94,6 +119,7 @@ export function initializeChat({
 
   function renderHistory() {
     messages.replaceChildren();
+    setHasMessages(false);
     for (const item of [...historyItems].sort(
       (left, right) => left.created_at.localeCompare(right.created_at) || left.id - right.id,
     )) {
@@ -123,6 +149,7 @@ export function initializeChat({
       historyOffset = 0;
       hasMoreHistory = false;
       messages.replaceChildren();
+      setHasMessages(false);
     }
     loadMoreButton.hidden = true;
     setMessage(resetHistory ? "대화 기록을 불러오는 중입니다." : "이전 기록을 불러오는 중입니다.");
@@ -170,7 +197,7 @@ export function initializeChat({
 
   loadMoreButton.addEventListener("click", () => { void loadHistoryPage(false); });
 
-  form.addEventListener("submit", async (event) => {
+  async function submitQuestion(event) {
     event.preventDefault();
     if (requestPending) {
       return;
@@ -190,6 +217,7 @@ export function initializeChat({
     submitButton.disabled = true;
     appendBubble("user", question);
     questionInput.value = "";
+    resizeQuestionInput();
     setMessage("AI가 답변을 작성하고 있습니다.");
     try {
       const response = await chatApi.sendChat(question, getConversationId());
@@ -216,7 +244,16 @@ export function initializeChat({
         submitButton.disabled = false;
       }
     }
+  }
+
+  form.addEventListener("submit", submitQuestion);
+  questionInput.addEventListener("input", resizeQuestionInput);
+  questionInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+      void submitQuestion(event);
+    }
   });
+  resizeQuestionInput();
 
   return {
     getIsPending: () => requestPending,
