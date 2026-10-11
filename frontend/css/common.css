@@ -1,7 +1,21 @@
 :root {
-  color: #172033;
-  background: #f6f8fc;
-  font-family: "Noto Sans KR", system-ui, sans-serif;
+  color: #192235;
+  background: #f4f7fb;
+  font-family: "Noto Sans KR", "Pretendard", system-ui, sans-serif;
+  font-synthesis: none;
+  --background: #f4f7fb;
+  --surface: #ffffff;
+  --surface-subtle: #f8faff;
+  --text: #192235;
+  --muted: #5d6b82;
+  --border: #d7dfeb;
+  --border-strong: #b7c5db;
+  --primary: #315cc4;
+  --primary-hover: #264ba4;
+  --primary-soft: #e7efff;
+  --danger: #b42318;
+  --success: #16794c;
+  --shadow: 0 16px 38px rgb(28 48 84 / 9%);
 }
 
 * {
@@ -11,21 +25,64 @@
 body {
   margin: 0;
   min-width: 320px;
+  min-height: 100vh;
+  background: var(--background);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  min-height: 2.625rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 0.625rem;
+  background: var(--primary);
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+button:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgb(49 92 196 / 28%);
+  outline-offset: 2px;
 }
 
 .app-shell {
   display: grid;
-  gap: 1.5rem;
+  gap: 1.75rem;
   min-height: 100vh;
-  max-width: 48rem;
+  max-width: 76rem;
   margin: 0 auto;
-  padding: 4rem 1.5rem;
+  padding: clamp(2rem, 5vw, 4.5rem) 1.5rem;
   align-content: center;
 }
 
 .eyebrow {
   margin: 0 0 0.75rem;
-  color: #596780;
+  color: var(--primary);
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -39,21 +96,21 @@ p {
 
 h1 {
   margin-bottom: 0.75rem;
-  font-size: clamp(2rem, 7vw, 3.5rem);
+  font-size: clamp(2rem, 5vw, 3.5rem);
   line-height: 1.2;
 }
 
 .description {
   margin-bottom: 0;
-  color: #526078;
+  color: var(--muted);
 }
 
 .status-card {
   padding: 1.5rem;
-  border: 1px solid #d9dfeb;
+  border: 1px solid var(--border);
   border-radius: 1rem;
-  background: #ffffff;
-  box-shadow: 0 12px 30px rgb(31 45 70 / 8%);
+  background: var(--surface);
+  box-shadow: var(--shadow);
 }
 
 .status-card h2 {
@@ -63,5 +120,12 @@ h1 {
 
 .status-card p {
   margin-bottom: 0;
-  color: #33466d;
+  color: var(--muted);
+}
+
+@media (max-width: 40rem) {
+  .app-shell {
+    gap: 1.25rem;
+    padding: 1.5rem 1rem 2rem;
+  }
 }
