@@ -81,6 +81,12 @@ Python 버전과 패키지 버전은 [uv](https://docs.astral.sh/uv/) 로 맞춥
 | `OPENROUTER_SITE_URL` | 선택 헤더 `HTTP-Referer`. 비어 있으면 생략 | 없음 |
 | `OPENROUTER_SITE_NAME` | 선택 헤더 `X-OpenRouter-Title`. 비어 있으면 생략 | 없음 |
 
+## 프론트엔드 API 모드
+
+배포와 일반 로컬 실행에서 프론트엔드는 같은 출처의 실제 API를 기본으로 사용합니다. 인증 쿠키도 `credentials: "same-origin"`으로만 전송하며, 브라우저 코드에서 JWT를 저장하지 않습니다.
+
+Mock 모드는 자동 테스트나 화면 단독 개발처럼 명시적으로 필요한 경우에만 `document.documentElement.dataset`의 기능별 `authApiMode`, `chatApiMode`, `healthApiMode` 값을 `mock`으로 설정해 사용합니다. 이 설정을 엔트리 HTML에 고정하지 않아 배포 환경에서 Mock 응답이 노출되지 않게 합니다.
+
 ## 백엔드 B 작업 요약
 
 권현석: 이슈 #9에 따라 대화방·대화 repository와 인증된 채팅/방 목록 API를 구현했습니다. 최근 성공 Q/A 5쌍으로 문맥을 구성하고 OpenRouter의 StreamLake 제공자만 호출합니다. 입력 검증, 전체 타임아웃, AI·DB 오류 응답, 요청 ID로 연결되는 이벤트 로그를 추가했습니다. 관련 자동 테스트와 실제 서버 확인 스크립트, 채팅 기술 문서를 작성했습니다. 2026-10-09 실제 AI 응답·후속 질문 문맥·PostgreSQL 저장까지 검증했습니다.
