@@ -139,7 +139,7 @@
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 @media (min-width: 48.0625rem) {
-  .chat-layout[data-sidebar-toggled="true"][data-conversations-open="false"] { grid-template-columns: 0 minmax(0, 1fr); }
+  .chat-layout[data-sidebar-toggled="true"][data-conversations-open="false"] { display: block; }
   .chat-layout[data-sidebar-toggled="true"][data-conversations-open="false"] .conversation-panel { display: none; }
 }
 
