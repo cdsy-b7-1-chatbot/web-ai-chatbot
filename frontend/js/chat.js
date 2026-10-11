@@ -16,14 +16,17 @@ export function initializeChat({ chatApi = { sendChat }, onProtectedApiError = (
   const form = document.querySelector("#chat-form");
   const questionInput = document.querySelector("#chat-question");
   const submitButton = document.querySelector("#chat-submit");
+  const newChatButton = document.querySelector("#new-chat-button");
   const messages = document.querySelector("#chat-messages");
   const message = document.querySelector("#chat-message");
 
-  if (!form || !questionInput || !submitButton || !messages || !message) {
+  if (!form || !questionInput || !submitButton || !newChatButton || !messages || !message) {
     return;
   }
 
   let requestPending = false;
+  let conversationId = null;
+  let requestGeneration = 0;
 
   function setMessage(text, state = "") {
     message.textContent = text;
@@ -37,6 +40,22 @@ export function initializeChat({ chatApi = { sendChat }, onProtectedApiError = (
     bubble.textContent = text;
     messages.append(bubble);
   }
+
+  function reset() {
+    requestGeneration += 1;
+    requestPending = false;
+    conversationId = null;
+    messages.replaceChildren();
+    questionInput.value = "";
+    questionInput.disabled = false;
+    submitButton.disabled = false;
+    setMessage("");
+  }
+
+  newChatButton.addEventListener("click", () => {
+    reset();
+    questionInput.focus();
+  });
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -52,25 +71,41 @@ export function initializeChat({ chatApi = { sendChat }, onProtectedApiError = (
     }
 
     requestPending = true;
+    const generation = requestGeneration;
     questionInput.disabled = true;
     submitButton.disabled = true;
     appendBubble("user", question);
     questionInput.value = "";
     setMessage("AI가 답변을 작성하고 있습니다.");
     try {
-      const response = await chatApi.sendChat(question, null);
+      const response = await chatApi.sendChat(question, conversationId);
+      if (generation !== requestGeneration) {
+        return;
+      }
+
+      conversationId = response.conversation_id;
       appendBubble("assistant", response.answer);
       setMessage(response.truncated ? "답변이 길이 제한으로 일부 잘렸습니다." : "");
     } catch (error) {
+      if (generation !== requestGeneration) {
+        return;
+      }
+
       if (!onProtectedApiError(error)) {
         setMessage(getChatErrorMessage(error), "error");
       }
     } finally {
-      requestPending = false;
-      questionInput.disabled = false;
-      submitButton.disabled = false;
+      if (generation === requestGeneration) {
+        requestPending = false;
+        questionInput.disabled = false;
+        submitButton.disabled = false;
+      }
     }
   });
 
-  return { getIsPending: () => requestPending };
+  return {
+    getConversationId: () => conversationId,
+    getIsPending: () => requestPending,
+    reset,
+  };
 }

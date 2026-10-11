@@ -52,6 +52,7 @@ export async function initializeApplication({
 
   let authState = AUTH_STATES.CHECKING;
   let chatInitialized = false;
+  let chatController = null;
   let authenticationRequest = null;
   let requestGeneration = 0;
 
@@ -68,6 +69,9 @@ export async function initializeApplication({
     } else {
       usernameElement.textContent = "";
       document.body.dataset.currentConversationId = "";
+      if (nextState === AUTH_STATES.UNAUTHENTICATED) {
+        chatController?.reset();
+      }
     }
 
     if (nextState === AUTH_STATES.ERROR) {
@@ -88,7 +92,7 @@ export async function initializeApplication({
         if (generation !== requestGeneration) return;
         renderAuthState(AUTH_STATES.AUTHENTICATED, user);
         if (!chatInitialized) {
-          initializeChatFn();
+          chatController = initializeChatFn({ onProtectedApiError: handleProtectedApiError });
           initializeHistoryFn();
           chatInitialized = true;
         }

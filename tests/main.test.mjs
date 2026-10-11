@@ -48,6 +48,8 @@ function createDependencies(getCurrentUser) {
   let loginSuccessCallback;
   let logoutCallback;
   let chatStarts = 0;
+  let chatResets = 0;
+  let chatOptions;
   let historyStarts = 0;
   return {
     dependencies: {
@@ -60,12 +62,17 @@ function createDependencies(getCurrentUser) {
         loginSuccessCallback = onLoginSuccess;
         logoutCallback = onLogout;
       },
-      initializeChatFn: () => { chatStarts += 1; },
+      initializeChatFn: (options) => {
+        chatStarts += 1;
+        chatOptions = options;
+        return { reset: () => { chatResets += 1; } };
+      },
       initializeHistoryFn: () => { historyStarts += 1; },
     },
     getLoginSuccessCallback: () => loginSuccessCallback,
     getLogoutCallback: () => logoutCallback,
-    getStarts: () => ({ chatStarts, historyStarts }),
+    getChatOptions: () => chatOptions,
+    getStarts: () => ({ chatStarts, chatResets, historyStarts }),
   };
 }
 
@@ -81,7 +88,7 @@ test("초기 인증 성공 시 사용자 정보를 표시하고 채팅 영역만
   assert.equal(mainDocument.elements["chat-screen"].hidden, false);
   assert.equal(mainDocument.elements["auth-screen"].hidden, true);
   assert.equal(mainDocument.elements["auth-checking"].hidden, true);
-  assert.deepEqual(setup.getStarts(), { chatStarts: 1, historyStarts: 1 });
+  assert.deepEqual(setup.getStarts(), { chatStarts: 1, chatResets: 0, historyStarts: 1 });
 });
 
 test("로그아웃 성공은 사용자 정보와 인증 상태를 초기화한다", async () => {
@@ -97,6 +104,7 @@ test("로그아웃 성공은 사용자 정보와 인증 상태를 초기화한�
   assert.equal(mainDocument.body.dataset.currentConversationId, "");
   assert.equal(mainDocument.elements["auth-screen"].hidden, false);
   assert.equal(mainDocument.elements["chat-screen"].hidden, true);
+  assert.equal(setup.getStarts().chatResets, 1);
 });
 
 test("보호 API의 UNAUTHORIZED만 공통 인증 해제로 처리한다", async () => {
@@ -109,6 +117,7 @@ test("보호 API의 UNAUTHORIZED만 공통 인증 해제로 처리한다", async
   assert.equal(application.getAuthState(), AUTH_STATES.AUTHENTICATED);
   assert.equal(application.handleProtectedApiError(new ApiError(401, "UNAUTHORIZED", "만료")), true);
   assert.equal(application.getAuthState(), AUTH_STATES.UNAUTHENTICATED);
+  assert.equal(setup.getStarts().chatResets, 1);
 });
 
 test("로그아웃 API 실패는 현재 인증 상태를 유지해 재시도할 수 있다", async () => {
@@ -153,7 +162,7 @@ test("초기 401은 로그인 화면만 표시하고 채팅을 초기화하지 �
   assert.equal(mainDocument.elements["auth-screen"].hidden, false);
   assert.equal(mainDocument.elements["chat-screen"].hidden, true);
   assert.equal(mainDocument.elements["auth-error"].hidden, true);
-  assert.deepEqual(setup.getStarts(), { chatStarts: 0, historyStarts: 0 });
+  assert.deepEqual(setup.getStarts(), { chatStarts: 0, chatResets: 0, historyStarts: 0 });
 });
 
 test("확인 불가 오류는 재시도로 인증 상태를 복구한다", async () => {
@@ -197,7 +206,18 @@ test("로그인 성공 콜백은 서버 사용자 확인 뒤 한 번만 채팅�
   await setup.getLoginSuccessCallback()();
   assert.equal(application.getAuthState(), AUTH_STATES.AUTHENTICATED);
   assert.equal(mainDocument.elements["current-username"].textContent, "logged_in");
-  assert.deepEqual(setup.getStarts(), { chatStarts: 1, historyStarts: 1 });
+  assert.deepEqual(setup.getStarts(), { chatStarts: 1, chatResets: 0, historyStarts: 1 });
+});
+
+test("채팅 모듈에는 보호 API 오류를 인증 상태로 연결하는 콜백을 전달한다", async () => {
+  const mainDocument = createMainDocument();
+  globalThis.document = mainDocument;
+  const setup = createDependencies(async () => ({ id: 10, username: "chat_error_user" }));
+  const application = await initializeApplication(setup.dependencies);
+
+  assert.equal(setup.getChatOptions().onProtectedApiError(new ApiError(401, "UNAUTHORIZED", "만료")), true);
+  assert.equal(application.getAuthState(), AUTH_STATES.UNAUTHENTICATED);
+  assert.equal(setup.getStarts().chatResets, 1);
 });
 
 test("인증 확인 중에는 인증·채팅 화면을 함께 숨긴다", async () => {
