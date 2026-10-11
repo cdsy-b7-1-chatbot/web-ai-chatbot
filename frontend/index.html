@@ -14,7 +14,7 @@
       <section class="intro" aria-labelledby="service-title">
         <p class="eyebrow">WEB AI CHATBOT</p>
         <h1 id="service-title">질문하고, 이해하고, 정리하세요.</h1>
-        <p class="description">프론트엔드 개발 기반을 준비했습니다.</p>
+        <p class="description">궁금한 것에서 시작해 나만의 생각으로 이어가세요.</p>
       </section>
 
       <section id="auth-checking" class="auth-state-card" role="status" aria-live="polite" hidden>
@@ -58,30 +58,42 @@
         <p id="auth-message" class="auth-message" role="status" aria-live="polite"></p>
       </section>
 
-      <section id="chat-screen" class="chat-card" aria-labelledby="chat-title" hidden>
-        <p class="eyebrow">AI CHATBOT</p>
-        <h2 id="chat-title">환영합니다, <span id="current-username"></span>님</h2>
-        <p class="description">질문을 입력하면 AI가 답변합니다.</p>
-        <button id="conversation-toggle" class="conversation-toggle" type="button" aria-controls="conversation-panel" aria-expanded="false">대화방</button>
-        <div id="chat-layout" class="chat-layout" data-conversations-open="false">
+      <section id="chat-screen" class="chat-app" aria-labelledby="chat-title" hidden>
+        <header class="chat-header">
+          <p id="chat-title" class="chat-brand">AI Chatbot</p>
+          <div class="account-controls">
+            <span class="current-user"><span id="current-username"></span>님</span>
+            <button id="logout-button" type="button">로그아웃</button>
+          </div>
+          <p id="logout-message" class="logout-message" role="status" aria-live="polite"></p>
+        </header>
+        <div id="chat-layout" class="chat-layout" data-conversations-open="false" data-sidebar-toggled="false">
           <nav id="conversation-panel" class="conversation-panel" aria-labelledby="conversation-title">
-            <h3 id="conversation-title">대화방</h3>
+            <button id="new-chat-button" class="new-chat-button" type="button">+ 새 대화</button>
+            <h2 id="conversation-title">나의 대화</h2>
             <div id="conversation-list" class="conversation-list" aria-live="polite"></div>
             <p id="conversation-message" class="conversation-message" role="status" aria-live="polite"></p>
             <button id="retry-conversations" type="button" hidden>다시 시도</button>
           </nav>
           <div class="chat-content">
-            <button id="new-chat-button" type="button">새 대화</button>
-            <div id="chat-messages" class="chat-messages" role="log" aria-live="polite" aria-label="대화 내용"></div>
+            <div class="chat-content-topbar">
+              <button id="conversation-toggle" class="conversation-toggle" type="button" aria-controls="conversation-panel" aria-expanded="false">대화방</button>
+            </div>
+            <div class="chat-stage">
+              <div id="chat-empty-state" class="chat-empty-state">
+                <p class="eyebrow">ASK · UNDERSTAND · ORGANIZE</p>
+                <h2>질문하고, 이해하고, 정리하세요.</h2>
+                <p>궁금한 것을 편하게 물어보세요. 답변을 읽으며 생각을 이어갈 수 있습니다.</p>
+              </div>
+              <div id="chat-messages" class="chat-messages" role="log" aria-live="polite" aria-label="대화 내용" data-has-messages="false"></div>
+            </div>
             <button id="load-more-history" type="button" hidden>이전 기록 더 보기</button>
             <form id="chat-form" class="chat-form" novalidate>
-              <label for="chat-question">질문</label>
-              <textarea id="chat-question" name="question" rows="3" maxlength="5000" required></textarea>
-              <button id="chat-submit" type="submit">전송</button>
+              <label class="visually-hidden" for="chat-question">질문</label>
+              <textarea id="chat-question" name="question" rows="1" maxlength="5000" required placeholder="궁금한 것을 질문해 보세요."></textarea>
+              <button id="chat-submit" type="submit" aria-label="질문 전송">↑</button>
             </form>
             <p id="chat-message" class="chat-message" role="status" aria-live="polite"></p>
-            <button id="logout-button" type="button">로그아웃</button>
-            <p id="logout-message" role="status" aria-live="polite"></p>
           </div>
         </div>
       </section>

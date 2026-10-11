@@ -31,13 +31,17 @@ export function initializeHistory({
   let selectedConversationId = null;
   let requestGeneration = 0;
 
-  function setConversationPanelOpen(isOpen) {
+  function setConversationPanelOpen(isOpen, isUserToggle = false) {
     if (!layout || !toggleButton) {
       return;
     }
 
     layout.dataset.conversationsOpen = String(isOpen);
+    if (isUserToggle) {
+      layout.dataset.sidebarToggled = "true";
+    }
     toggleButton.setAttribute("aria-expanded", String(isOpen));
+    toggleButton.setAttribute("aria-label", isOpen ? "대화방 닫기" : "대화방 열기");
   }
 
   function setMessage(text, state = "") {
@@ -113,8 +117,11 @@ export function initializeHistory({
 
   retryButton.addEventListener("click", refresh);
   toggleButton?.addEventListener("click", () => {
-    setConversationPanelOpen(layout?.dataset.conversationsOpen !== "true");
+    setConversationPanelOpen(layout?.dataset.conversationsOpen !== "true", true);
   });
+  if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
+    setConversationPanelOpen(window.matchMedia("(min-width: 48.0625rem)").matches);
+  }
   void refresh();
   function setSelectedConversation(conversationId) {
     selectedConversationId = conversationId;
