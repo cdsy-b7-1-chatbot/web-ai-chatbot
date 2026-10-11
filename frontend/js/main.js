@@ -58,6 +58,12 @@ export async function initializeApplication({
   let authenticationRequest = null;
   let requestGeneration = 0;
 
+  function setCurrentConversation(conversationId) {
+    currentConversationId = conversationId;
+    document.body.dataset.currentConversationId = conversationId === null ? "" : String(conversationId);
+    historyController?.setSelectedConversation(conversationId);
+  }
+
   function renderAuthState(nextState, user = null, message = "") {
     authState = nextState;
     document.body.dataset.authState = nextState;
@@ -77,9 +83,8 @@ export async function initializeApplication({
       usernameElement.textContent = user.username;
     } else {
       usernameElement.textContent = "";
-      document.body.dataset.currentConversationId = "";
       if (nextState === AUTH_STATES.UNAUTHENTICATED) {
-        currentConversationId = null;
+        setCurrentConversation(null);
         chatController?.reset();
         historyController?.reset();
       }
@@ -106,23 +111,17 @@ export async function initializeApplication({
           chatController = initializeChatFn({
             getConversationId: () => currentConversationId,
             onChatSuccess: (response) => {
-              currentConversationId = response.conversation_id;
-              document.body.dataset.currentConversationId = String(currentConversationId);
-              historyController?.setSelectedConversation(currentConversationId);
+              setCurrentConversation(response.conversation_id);
               void historyController?.refresh();
             },
             onNewConversation: () => {
-              currentConversationId = null;
-              document.body.dataset.currentConversationId = "";
-              historyController?.setSelectedConversation(null);
+              setCurrentConversation(null);
             },
             onProtectedApiError: handleProtectedApiError,
           });
           historyController = initializeHistoryFn({
             onConversationSelect: (conversationId) => {
-              currentConversationId = conversationId;
-              document.body.dataset.currentConversationId = String(conversationId);
-              historyController?.setSelectedConversation(conversationId);
+              setCurrentConversation(conversationId);
               void chatController?.loadConversation(conversationId);
             },
             onProtectedApiError: handleProtectedApiError,
