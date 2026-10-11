@@ -1,41 +1,39 @@
 :root {
-  color: #192235;
-  background: #f4f7fb;
+  color: #302c29;
+  background: #f8f6f2;
   font-family: "Noto Sans KR", "Pretendard", system-ui, sans-serif;
   font-synthesis: none;
-  --background: #f4f7fb;
-  --surface: #ffffff;
-  --surface-subtle: #f8faff;
-  --text: #192235;
-  --muted: #5d6b82;
-  --border: #d7dfeb;
-  --border-strong: #b7c5db;
-  --primary: #315cc4;
-  --primary-hover: #264ba4;
-  --primary-soft: #e7efff;
-  --danger: #b42318;
-  --success: #16794c;
-  --shadow: 0 16px 38px rgb(28 48 84 / 9%);
+  --background: #f8f6f2;
+  --surface: #fffdf9;
+  --surface-subtle: #f4f1eb;
+  --sidebar: #eeeae3;
+  --text: #302c29;
+  --muted: #766e66;
+  --border: #e1d9cf;
+  --border-strong: #cec1b4;
+  --primary: #a06a51;
+  --primary-hover: #86543e;
+  --primary-soft: #f1e2d8;
+  --danger: #a5463e;
+  --success: #557353;
+  --shadow: 0 14px 34px rgb(75 55 40 / 6%);
+  --radius: 0.875rem;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
-  margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  margin: 0;
   background: var(--background);
   color: var(--text);
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 button,
 input,
-textarea {
-  font: inherit;
-}
+textarea { font: inherit; }
 
 button {
   min-height: 2.625rem;
@@ -43,89 +41,73 @@ button {
   border: 1px solid transparent;
   border-radius: 0.625rem;
   background: var(--primary);
-  color: #ffffff;
+  color: #fffdf9;
   font-weight: 700;
   cursor: pointer;
-  transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease,
-    transform 150ms ease;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
 }
 
-button:hover:not(:disabled) {
-  background: var(--primary-hover);
-}
-
-button:active:not(:disabled) {
-  transform: translateY(1px);
-}
-
-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
+button:hover:not(:disabled) { background: var(--primary-hover); }
+button:disabled { cursor: not-allowed; opacity: 0.6; }
 
 button:focus-visible,
 input:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid rgb(49 92 196 / 28%);
+  outline: 3px solid rgb(160 106 81 / 28%);
   outline-offset: 2px;
-}
-
-.app-shell {
-  display: grid;
-  gap: 1.75rem;
-  min-height: 100vh;
-  max-width: 76rem;
-  margin: 0 auto;
-  padding: clamp(2rem, 5vw, 4.5rem) 1.5rem;
-  align-content: center;
-}
-
-.eyebrow {
-  margin: 0 0 0.75rem;
-  color: var(--primary);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
 }
 
 h1,
 h2,
-p {
-  margin-top: 0;
+h3,
+p { margin-top: 0; }
+
+.app-shell { min-height: 100vh; padding: clamp(1rem, 3vw, 2.5rem); }
+
+.intro {
+  max-width: 38rem;
+  margin: 0 auto 1.75rem;
+  text-align: center;
+}
+
+.eyebrow {
+  margin: 0 0 0.65rem;
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
 }
 
 h1 {
-  margin-bottom: 0.75rem;
-  font-size: clamp(2rem, 5vw, 3.5rem);
-  line-height: 1.2;
+  margin-bottom: 0.65rem;
+  font-family: Georgia, "Noto Serif KR", serif;
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.25;
 }
 
-.description {
-  margin-bottom: 0;
-  color: var(--muted);
-}
+.description { margin-bottom: 0; color: var(--muted); }
 
-.status-card {
-  padding: 1.5rem;
+.status-card,
+.auth-state-card {
+  max-width: 23.75rem;
+  margin: 1rem auto;
+  padding: 1.25rem;
   border: 1px solid var(--border);
-  border-radius: 1rem;
+  border-radius: var(--radius);
   background: var(--surface);
-  box-shadow: var(--shadow);
 }
 
-.status-card h2 {
-  margin-bottom: 0.5rem;
-  font-size: 1rem;
-}
+.status-card h2,
+.auth-state-card h2 { margin-bottom: 0.35rem; font-size: 1rem; }
+.status-card p,
+.auth-state-card p { margin-bottom: 0; color: var(--muted); }
 
-.status-card p {
-  margin-bottom: 0;
-  color: var(--muted);
-}
+body[data-auth-state="authenticated"] .intro,
+body[data-auth-state="authenticated"] .status-card { display: none; }
 
 @media (max-width: 40rem) {
-  .app-shell {
-    gap: 1.25rem;
-    padding: 1.5rem 1rem 2rem;
-  }
+  .app-shell { padding: 1rem; }
+  .intro { margin-top: 2rem; }
 }
