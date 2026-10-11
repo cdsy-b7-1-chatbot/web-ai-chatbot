@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ko" data-health-api-mode="mock">
+<html lang="ko" data-auth-api-mode="mock" data-health-api-mode="mock">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -15,6 +15,36 @@
         <p class="eyebrow">WEB AI CHATBOT</p>
         <h1 id="service-title">질문하고, 이해하고, 정리하세요.</h1>
         <p class="description">프론트엔드 개발 기반을 준비했습니다.</p>
+      </section>
+
+      <section class="auth-card" aria-labelledby="auth-title">
+        <div class="auth-heading">
+          <p class="eyebrow">시작하기</p>
+          <h2 id="auth-title">로그인</h2>
+          <p class="description">대화를 저장하려면 로그인해 주세요.</p>
+        </div>
+
+        <form id="login-form" class="auth-form" novalidate>
+          <label for="login-username">아이디</label>
+          <input id="login-username" name="username" type="text" autocomplete="username" required />
+          <label for="login-password">비밀번호</label>
+          <input id="login-password" name="password" type="password" autocomplete="current-password" required />
+          <button id="login-submit" type="submit">로그인</button>
+          <p class="auth-switch">계정이 없으신가요? <button type="button" data-auth-view="signup">회원가입</button></p>
+        </form>
+
+        <form id="signup-form" class="auth-form" hidden novalidate>
+          <label for="signup-username">아이디</label>
+          <input id="signup-username" name="username" type="text" autocomplete="username" required />
+          <p class="field-hint">3~20자 영문, 숫자, 밑줄을 사용할 수 있습니다.</p>
+          <label for="signup-password">비밀번호</label>
+          <input id="signup-password" name="password" type="password" autocomplete="new-password" required />
+          <p class="field-hint">8~64자를 입력해 주세요.</p>
+          <button id="signup-submit" type="submit">회원가입</button>
+          <p class="auth-switch">이미 계정이 있으신가요? <button type="button" data-auth-view="login">로그인</button></p>
+        </form>
+
+        <p id="auth-message" class="auth-message" role="status" aria-live="polite"></p>
       </section>
 
       <section class="status-card" aria-labelledby="status-title">
