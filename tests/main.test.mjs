@@ -4,6 +4,7 @@ import test from "node:test";
 class FakeElement {
   constructor() {
     this.hidden = false;
+    this.dataset = {};
     this.textContent = "";
     this.listeners = new Map();
   }
@@ -21,6 +22,7 @@ function createMainDocument() {
     "auth-checking",
     "auth-error",
     "auth-state-message",
+    "auth-message",
     "chat-screen",
     "current-username",
     "logout-message",
@@ -137,6 +139,20 @@ test("재로그인 시 이전 로그아웃 진행 메시지를 지운다", async
   await setup.getLoginSuccessCallback()();
   assert.equal(application.getAuthState(), AUTH_STATES.AUTHENTICATED);
   assert.equal(mainDocument.elements["logout-message"].textContent, "");
+});
+
+test("로그아웃 시 이전 로그인 성공 메시지를 지운다", async () => {
+  const mainDocument = createMainDocument();
+  globalThis.document = mainDocument;
+  const setup = createDependencies(async () => ({ id: 14, username: "logout_message_user" }));
+  const application = await initializeApplication(setup.dependencies);
+
+  mainDocument.elements["auth-message"].textContent = "로그인되었습니다.";
+  mainDocument.elements["auth-message"].dataset.state = "success";
+  await setup.getLogoutCallback()();
+  assert.equal(application.getAuthState(), AUTH_STATES.UNAUTHENTICATED);
+  assert.equal(mainDocument.elements["auth-message"].textContent, "");
+  assert.equal(mainDocument.elements["auth-message"].dataset.state, "");
 });
 
 test("보호 API의 UNAUTHORIZED만 공통 인증 해제로 처리한다", async () => {

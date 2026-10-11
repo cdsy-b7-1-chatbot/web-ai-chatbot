@@ -34,6 +34,7 @@ export async function initializeApplication({
   const errorMessage = document.querySelector("#auth-state-message");
   const chatScreen = document.querySelector("#chat-screen");
   const usernameElement = document.querySelector("#current-username");
+  const authMessage = document.querySelector("#auth-message");
   const logoutMessage = document.querySelector("#logout-message");
   const retryButton = document.querySelector("#retry-auth");
 
@@ -66,6 +67,10 @@ export async function initializeApplication({
     chatScreen.hidden = nextState !== AUTH_STATES.AUTHENTICATED;
     if (logoutMessage) {
       logoutMessage.textContent = "";
+    }
+    if (authMessage) {
+      authMessage.textContent = "";
+      authMessage.dataset.state = "";
     }
 
     if (nextState === AUTH_STATES.AUTHENTICATED) {
