@@ -422,6 +422,82 @@ test("기록 응답이 먼저 와도 과거 기록과 진행 중인 질문·답�
   assert.equal(chatDocument.elements["load-more-history"].hidden, true);
 });
 
+test("일반 API 오류 뒤 기록을 다시 렌더링해도 진행 중 질문을 남기지 않는다", async () => {
+  const chatDocument = createChatDocument();
+  globalThis.document = chatDocument;
+  let resolveHistory;
+  let rejectChat;
+  const requests = [];
+  const historyRequest = new Promise((resolve) => { resolveHistory = resolve; });
+  const chatRequest = new Promise((_, reject) => { rejectChat = reject; });
+  const controller = initializeChat({
+    chatApi: {
+      getChatHistory: async (options) => {
+        requests.push(options);
+        return options.offset === 0
+          ? historyRequest
+          : { items: [] };
+      },
+      sendChat: async () => chatRequest,
+    },
+    getConversationId: () => 5,
+  });
+
+  const loadingHistory = controller.loadConversation(5);
+  chatDocument.elements["chat-question"].value = "실패할 질문";
+  const sendingQuestion = trigger(chatDocument.elements["chat-form"]);
+  resolveHistory({ items: [{ id: 1, question: "이전 질문", answer: "이전 답변", status: "success", created_at: "2026-10-11T00:00:00Z" }] });
+  await loadingHistory;
+  rejectChat(new ApiError(502, "AI_ERROR", "AI 응답을 처리하지 못했습니다."));
+  await sendingQuestion;
+  assert.equal(chatDocument.elements["chat-message"].textContent, "AI 응답을 처리하지 못했습니다.");
+  assert.equal(chatDocument.elements["chat-messages"].attributes.get("aria-busy"), "false");
+  assert.deepEqual(
+    chatDocument.elements["chat-messages"].children.map((bubble) => bubble.textContent),
+    ["이전 질문", "이전 답변"],
+  );
+
+  await controller.loadMoreHistory();
+  assert.deepEqual(requests.map(({ offset }) => offset), [0, 1]);
+  assert.equal(
+    chatDocument.elements["chat-messages"].children.some((bubble) => bubble.textContent === "실패할 질문"),
+    false,
+  );
+});
+
+test("인증 만료 뒤에는 진행 중 질문과 기록을 함께 초기화한다", async () => {
+  const chatDocument = createChatDocument();
+  globalThis.document = chatDocument;
+  let resolveHistory;
+  let rejectChat;
+  const historyRequest = new Promise((resolve) => { resolveHistory = resolve; });
+  const chatRequest = new Promise((_, reject) => { rejectChat = reject; });
+  let controller;
+  controller = initializeChat({
+    chatApi: {
+      getChatHistory: async () => historyRequest,
+      sendChat: async () => chatRequest,
+    },
+    getConversationId: () => 5,
+    onProtectedApiError: (error) => {
+      assert.equal(error.error, "UNAUTHORIZED");
+      controller.reset();
+      return true;
+    },
+  });
+
+  const loadingHistory = controller.loadConversation(5);
+  chatDocument.elements["chat-question"].value = "만료될 질문";
+  const sendingQuestion = trigger(chatDocument.elements["chat-form"]);
+  resolveHistory({ items: [{ id: 1, question: "이전 질문", answer: "이전 답변", status: "success", created_at: "2026-10-11T00:00:00Z" }] });
+  await loadingHistory;
+  rejectChat(new ApiError(401, "UNAUTHORIZED", "로그인이 필요합니다."));
+  await sendingQuestion;
+  assert.equal(chatDocument.elements["chat-message"].textContent, "");
+  assert.equal(chatDocument.elements["chat-messages"].children.length, 0);
+  assert.equal(chatDocument.elements["chat-messages"].attributes.get("aria-busy"), "false");
+});
+
 test("추가 기록은 offset으로 불러오고 중복 없이 시간순으로 표시한다", async () => {
   const chatDocument = createChatDocument();
   globalThis.document = chatDocument;

@@ -129,6 +129,7 @@ export function initializeChat({
     }
     if (pendingQuestion) {
       appendBubble("user", pendingQuestion.question);
+      pendingQuestion.renderedInHistory = true;
     }
   }
 
@@ -220,7 +221,7 @@ export function initializeChat({
 
     requestPending = true;
     const generation = messageRequestGeneration;
-    pendingQuestion = { generation, question };
+    pendingQuestion = { generation, question, renderedInHistory: false };
     updateMessagesBusy();
     questionInput.disabled = true;
     submitButton.disabled = true;
@@ -258,6 +259,12 @@ export function initializeChat({
         return;
       }
 
+      const renderedPendingQuestion =
+        pendingQuestion?.generation === generation && pendingQuestion.renderedInHistory;
+      pendingQuestion = null;
+      if (renderedPendingQuestion) {
+        renderHistory();
+      }
       if (!onProtectedApiError(error)) {
         setMessage(getChatErrorMessage(error), "error");
       }
