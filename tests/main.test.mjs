@@ -23,6 +23,7 @@ function createMainDocument() {
     "auth-state-message",
     "chat-screen",
     "current-username",
+    "logout-message",
     "retry-auth",
   ];
   const elements = Object.fromEntries(ids.map((id) => [id, new FakeElement()]));
@@ -117,6 +118,25 @@ test("로그아웃 성공은 사용자 정보와 인증 상태를 초기화한�
   assert.equal(mainDocument.elements["auth-screen"].hidden, false);
   assert.equal(mainDocument.elements["chat-screen"].hidden, true);
   assert.equal(setup.getStarts().chatResets, 1);
+});
+
+test("재로그인 시 이전 로그아웃 진행 메시지를 지운다", async () => {
+  const mainDocument = createMainDocument();
+  globalThis.document = mainDocument;
+  let requests = 0;
+  const setup = createDependencies(async () => {
+    requests += 1;
+    if (requests === 1) {
+      throw new ApiError(401, "UNAUTHORIZED", "로그인이 필요합니다.");
+    }
+    return { id: 13, username: "relogged_user" };
+  });
+
+  const application = await initializeApplication(setup.dependencies);
+  mainDocument.elements["logout-message"].textContent = "로그아웃 요청을 보내는 중입니다.";
+  await setup.getLoginSuccessCallback()();
+  assert.equal(application.getAuthState(), AUTH_STATES.AUTHENTICATED);
+  assert.equal(mainDocument.elements["logout-message"].textContent, "");
 });
 
 test("보호 API의 UNAUTHORIZED만 공통 인증 해제로 처리한다", async () => {
