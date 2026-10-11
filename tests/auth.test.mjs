@@ -28,6 +28,7 @@ function createAuthDocument() {
     "signup-form",
     "auth-message",
     "auth-title",
+    "auth-description",
     "login-username",
     "login-password",
     "signup-username",
@@ -86,10 +87,12 @@ test("인증 화면은 로그인과 회원가입 폼을 전환한다", async () 
   assert.equal(authDocument.elements["login-form"].hidden, true);
   assert.equal(authDocument.elements["signup-form"].hidden, false);
   assert.equal(authDocument.elements["auth-title"].textContent, "회원가입");
+  assert.equal(authDocument.elements["auth-description"].textContent, "새 계정을 만들어 대화를 시작해 보세요.");
 
   await trigger(authDocument.viewButtons[1], "click");
   assert.equal(authDocument.elements["login-form"].hidden, false);
   assert.equal(authDocument.elements["signup-form"].hidden, true);
+  assert.equal(authDocument.elements["auth-description"].textContent, "대화를 시작하려면 로그인해 주세요.");
 });
 
 test("Mock API로 회원가입 후 로그인 성공을 알리고 비밀번호를 지운다", async () => {

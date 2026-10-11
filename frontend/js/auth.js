@@ -41,6 +41,7 @@ export function initializeAuth({ onLoginSuccess = () => {}, onLogout = () => {},
   const signupForm = document.querySelector("#signup-form");
   const messageElement = document.querySelector("#auth-message");
   const titleElement = document.querySelector("#auth-title");
+  const descriptionElement = document.querySelector("#auth-description");
   const loginUsername = document.querySelector("#login-username");
   const loginPassword = document.querySelector("#login-password");
   const signupUsername = document.querySelector("#signup-username");
@@ -79,6 +80,11 @@ export function initializeAuth({ onLoginSuccess = () => {}, onLogout = () => {},
     loginForm.hidden = !isLogin;
     signupForm.hidden = isLogin;
     titleElement.textContent = isLogin ? "로그인" : "회원가입";
+    if (descriptionElement) {
+      descriptionElement.textContent = isLogin
+        ? "대화를 시작하려면 로그인해 주세요."
+        : "새 계정을 만들어 대화를 시작해 보세요.";
+    }
     setMessage("");
   }
 
