@@ -3,6 +3,9 @@ import { ApiError } from "./errors.js";
 let nextUserId = 1;
 const usersByUsername = new Map();
 let currentUserId = null;
+let nextConversationId = 1;
+let nextChatId = 1;
+const conversationsById = new Map();
 
 function normalizeUsername(username) {
   return typeof username === "string" ? username.toLowerCase() : "";
@@ -20,6 +23,26 @@ function validateSignup(username, password) {
 
 function toUserResponse(user) {
   return { id: user.id, username: user.username };
+}
+
+function getCurrentMockUser() {
+  const user = [...usersByUsername.values()].find(({ id }) => id === currentUserId);
+  if (!user) {
+    throw new ApiError(401, "UNAUTHORIZED", "로그인이 필요합니다.");
+  }
+
+  return user;
+}
+
+function validateChatRequest(question, conversationId) {
+  if (
+    typeof question !== "string" ||
+    question.trim().length === 0 ||
+    question.trim().length > 5000 ||
+    (conversationId !== null && (!Number.isInteger(conversationId) || conversationId <= 0))
+  ) {
+    throw new ApiError(422, "VALIDATION_ERROR", "입력값이 올바르지 않습니다.");
+  }
 }
 
 /**
@@ -59,10 +82,35 @@ export async function logoutMock() {
 }
 
 export async function getMockCurrentUser() {
-  const user = [...usersByUsername.values()].find(({ id }) => id === currentUserId);
-  if (!user) {
-    throw new ApiError(401, "UNAUTHORIZED", "로그인이 필요합니다.");
+  return toUserResponse(getCurrentMockUser());
+}
+
+/**
+ * 실제 AI 호출 없이도 새 방 생성과 같은 방의 후속 질문 흐름을 검증할 수 있게 한다.
+ */
+export async function sendChatMock(question, conversationId = null) {
+  const user = getCurrentMockUser();
+  validateChatRequest(question, conversationId);
+
+  let conversation;
+  if (conversationId === null) {
+    conversation = { id: nextConversationId, userId: user.id };
+    nextConversationId += 1;
+    conversationsById.set(conversation.id, conversation);
+  } else {
+    conversation = conversationsById.get(conversationId);
+    if (!conversation || conversation.userId !== user.id) {
+      throw new ApiError(404, "NOT_FOUND", "대화방을 찾을 수 없습니다.");
+    }
   }
 
-  return toUserResponse(user);
+  const response = {
+    chat_id: nextChatId,
+    conversation_id: conversation.id,
+    answer: `Mock 답변: ${question.trim()}`,
+    created_at: new Date().toISOString(),
+    truncated: false,
+  };
+  nextChatId += 1;
+  return response;
 }

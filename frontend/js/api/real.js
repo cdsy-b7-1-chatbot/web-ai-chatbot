@@ -2,6 +2,7 @@ import { ApiError } from "./errors.js";
 
 const HEALTH_ENDPOINT = "/api/health";
 const AUTH_ENDPOINT = "/api/auth";
+const CHAT_ENDPOINT = "/api/chat";
 
 async function requestJson(endpoint, options = {}) {
   const response = await fetch(endpoint, {
@@ -60,4 +61,15 @@ export async function logoutReal() {
 
 export async function getRealCurrentUser() {
   return requestJson(`${AUTH_ENDPOINT}/me`);
+}
+
+/**
+ * 채팅 백엔드의 응답 필드를 변환하지 않아 화면 코드가 Mock과 같은 계약을 사용하게 한다.
+ */
+export async function sendChatReal(question, conversationId = null) {
+  return requestJson(CHAT_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question, conversation_id: conversationId }),
+  });
 }

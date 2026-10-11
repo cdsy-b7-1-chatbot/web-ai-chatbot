@@ -147,3 +147,111 @@ test("기존 Health API는 Mock과 Real 모드에서 계속 동작한다", async
   assert.deepEqual(await api.getHealthStatus(), { status: "ok" });
   assert.equal(api.getHealthStatusSource(), "실제");
 });
+
+test("Mock 채팅 API는 새 대화와 기존 대화의 후속 질문에 같은 응답 계약을 제공한다", async (t) => {
+  t.after(() => {
+    document.documentElement.dataset.chatApiMode = "mock";
+  });
+
+  document.documentElement.dataset.chatApiMode = "mock";
+  await api.login("mock_user", "password123");
+  const first = await api.sendChat("첫 질문");
+  const followUp = await api.sendChat("후속 질문", first.conversation_id);
+
+  assert.deepEqual(Object.keys(first), ["chat_id", "conversation_id", "answer", "created_at", "truncated"]);
+  assert.equal(first.conversation_id, followUp.conversation_id);
+  assert.equal(first.chat_id + 1, followUp.chat_id);
+  assert.equal(followUp.answer, "Mock 답변: 후속 질문");
+  assert.equal(followUp.truncated, false);
+  assert.ok(Number.isFinite(Date.parse(followUp.created_at)));
+});
+
+test("Real 채팅 API는 요청 본문과 HTTP·네트워크 오류를 화면에 그대로 전달한다", async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+    document.documentElement.dataset.chatApiMode = "mock";
+  });
+
+  document.documentElement.dataset.chatApiMode = "real";
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, "/api/chat");
+    assert.deepEqual(options, {
+      credentials: "same-origin",
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question: "기존 대화 질문", conversation_id: 7 }),
+    });
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        chat_id: 3,
+        conversation_id: 7,
+        answer: "응답",
+        created_at: "2026-10-11T00:00:00Z",
+        truncated: false,
+      }),
+    };
+  };
+  assert.deepEqual(await api.sendChat("기존 대화 질문", 7), {
+    chat_id: 3,
+    conversation_id: 7,
+    answer: "응답",
+    created_at: "2026-10-11T00:00:00Z",
+    truncated: false,
+  });
+
+  const chatErrors = [
+    [401, "UNAUTHORIZED"],
+    [404, "NOT_FOUND"],
+    [422, "VALIDATION_ERROR"],
+    [500, "DB_ERROR"],
+    [502, "AI_ERROR"],
+    [503, "AI_NOT_CONFIGURED"],
+    [504, "AI_TIMEOUT"],
+  ];
+  for (const [status, error] of chatErrors) {
+    globalThis.fetch = async () => ({
+      ok: false,
+      status,
+      json: async () => ({ error, message: `${error} 메시지` }),
+    });
+    await assertApiError(() => api.sendChat("새 질문", null), {
+      status,
+      error,
+      message: `${error} 메시지`,
+    });
+  }
+
+  const networkError = new TypeError("Failed to fetch");
+  globalThis.fetch = async () => {
+    throw networkError;
+  };
+  await assert.rejects(() => api.sendChat("새 질문"), (error) => error === networkError);
+});
+
+test("Mock 채팅 API는 인증·입력·대화방 오류를 ApiError로 전달한다", async (t) => {
+  t.after(() => {
+    document.documentElement.dataset.chatApiMode = "mock";
+  });
+
+  document.documentElement.dataset.chatApiMode = "mock";
+  await api.logout();
+  await assertApiError(() => api.sendChat("질문"), {
+    status: 401,
+    error: "UNAUTHORIZED",
+    message: "로그인이 필요합니다.",
+  });
+  await api.login("mock_user", "password123");
+  await assertApiError(() => api.sendChat("   "), {
+    status: 422,
+    error: "VALIDATION_ERROR",
+    message: "입력값이 올바르지 않습니다.",
+  });
+  await assertApiError(() => api.sendChat("질문", 9999), {
+    status: 404,
+    error: "NOT_FOUND",
+    message: "대화방을 찾을 수 없습니다.",
+  });
+});

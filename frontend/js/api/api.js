@@ -3,6 +3,7 @@ import {
   getMockHealthStatus,
   loginMock,
   logoutMock,
+  sendChatMock,
   signupMock,
 } from "./mock.js";
 import {
@@ -10,6 +11,7 @@ import {
   getRealHealthStatus,
   loginReal,
   logoutReal,
+  sendChatReal,
   signupReal,
 } from "./real.js";
 
@@ -31,6 +33,10 @@ const apiByFeature = {
       logout: logoutReal,
       getCurrentUser: getRealCurrentUser,
     },
+  },
+  chat: {
+    mock: sendChatMock,
+    real: sendChatReal,
   },
 };
 
@@ -71,4 +77,12 @@ export async function logout() {
 
 export async function getCurrentUser() {
   return getAuthApi().getCurrentUser();
+}
+
+/**
+ * 새 대화는 conversationId에 null을 전달하고, 기존 대화는 서버가 발급한 양의 정수 ID를 전달한다.
+ */
+export async function sendChat(question, conversationId = null) {
+  const mode = getFeatureMode("chat");
+  return apiByFeature.chat[mode](question, conversationId);
 }
