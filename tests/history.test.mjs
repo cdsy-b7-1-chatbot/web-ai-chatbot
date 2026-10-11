@@ -41,6 +41,7 @@ async function click(element) {
 delete globalThis.document;
 const { ApiError } = await import("../frontend/js/api/errors.js");
 const { initializeHistory } = await import("../frontend/js/history.js");
+const mockApi = await import("../frontend/js/api/mock.js");
 
 test("최근 대화방을 표시하고 선택 상태와 콜백을 갱신한다", async () => {
   const historyDocument = createHistoryDocument();
@@ -87,4 +88,19 @@ test("빈 목록·오류·재시도를 화면 상태로 전달한다", async () 
   assert.equal(elements["retry-conversations"].hidden, false);
   await click(elements["retry-conversations"]);
   assert.equal(elements["conversation-list"].children[0].textContent, "복구된 대화");
+});
+
+test("실제 Mock API 새 대화는 목록 새로 고침으로 표시된다", async () => {
+  const username = `h_${Date.now().toString().slice(-10)}`;
+  await mockApi.signupMock(username, "password123");
+  await mockApi.loginMock(username, "password123");
+  const historyDocument = createHistoryDocument();
+  globalThis.document = historyDocument;
+  const controller = initializeHistory({ historyApi: { getConversations: mockApi.getMockConversations } });
+  await Promise.resolve();
+  await mockApi.sendChatMock("목록에 보일 질문");
+  await controller.refresh();
+
+  assert.equal(historyDocument.elements["conversation-list"].children.length, 1);
+  assert.equal(historyDocument.elements["conversation-list"].children[0].textContent, "목록에 보일 질문");
 });

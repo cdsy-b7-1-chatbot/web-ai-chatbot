@@ -31,7 +31,7 @@ class FakeElement {
 }
 
 function createChatDocument() {
-  const ids = ["chat-form", "chat-question", "chat-submit", "new-chat-button", "chat-messages", "chat-message"];
+  const ids = ["chat-form", "chat-question", "chat-submit", "new-chat-button", "load-more-history", "chat-messages", "chat-message"];
   const elements = Object.fromEntries(ids.map((id) => [id, new FakeElement()]));
   return {
     querySelector(selector) {
@@ -220,12 +220,14 @@ test("선택한 방의 최신순 기록을 시간순으로 표시하고 실패 �
   let selectedConversationId = 9;
   const controller = initializeChat({
     chatApi: {
-      getChatHistory: async ({ conversationId }) => {
+      getChatHistory: async ({ conversationId, limit, offset }) => {
         assert.equal(conversationId, 9);
+        assert.equal(limit, 20);
+        assert.equal(offset, 0);
         return {
           items: [
-            { id: 2, question: "실패 질문", answer: null, status: "failed", error_code: "AI_TIMEOUT" },
-            { id: 1, question: "처음 질문", answer: "처음 답변", status: "success", error_code: null },
+            { id: 2, question: "실패 질문", answer: null, status: "failed", error_code: "AI_TIMEOUT", created_at: "2026-10-11T00:01:00Z" },
+            { id: 1, question: "처음 질문", answer: "처음 답변", status: "success", error_code: null, created_at: "2026-10-11T00:00:00Z" },
           ],
         };
       },
@@ -257,7 +259,7 @@ test("다른 대화방을 선택하면 이전 기록 응답을 무시한다", as
   const controller = initializeChat({
     chatApi: {
       getChatHistory: async ({ conversationId }) => (
-        conversationId === 1 ? firstRequest : { items: [{ id: 2, question: "둘째", answer: "방", status: "success" }] }
+        conversationId === 1 ? firstRequest : { items: [{ id: 2, question: "둘째", answer: "방", status: "success", created_at: "2026-10-11T00:01:00Z" }] }
       ),
       sendChat: async () => ({ answer: "unused" }),
     },
@@ -266,10 +268,39 @@ test("다른 대화방을 선택하면 이전 기록 응답을 무시한다", as
   const loadingFirst = controller.loadConversation(1);
   selectedConversationId = 2;
   await controller.loadConversation(2);
-  resolveFirst({ items: [{ id: 1, question: "첫째", answer: "방", status: "success" }] });
+  resolveFirst({ items: [{ id: 1, question: "첫째", answer: "방", status: "success", created_at: "2026-10-11T00:00:00Z" }] });
   await loadingFirst;
   assert.deepEqual(
     chatDocument.elements["chat-messages"].children.map((bubble) => bubble.textContent),
     ["둘째", "방"],
   );
+});
+
+test("추가 기록은 offset으로 불러오고 중복 없이 시간순으로 표시한다", async () => {
+  const chatDocument = createChatDocument();
+  globalThis.document = chatDocument;
+  const pageItems = Array.from({ length: 20 }, (_, index) => ({
+    id: index + 1,
+    question: `질문 ${index + 1}`,
+    answer: String(index + 1),
+    status: "success",
+    created_at: `2026-10-11T00:${String(index).padStart(2, "0")}:00Z`,
+  }));
+  const requests = [];
+  const controller = initializeChat({
+    chatApi: {
+      getChatHistory: async (options) => {
+        requests.push(options);
+        return options.offset === 0 ? { items: pageItems } : { items: [pageItems[0]] };
+      },
+      sendChat: async () => ({ answer: "unused" }),
+    },
+    getConversationId: () => 5,
+  });
+  await controller.loadConversation(5);
+  assert.equal(chatDocument.elements["load-more-history"].hidden, false);
+  await controller.loadMoreHistory();
+  assert.deepEqual(requests.map(({ offset }) => offset), [0, 20]);
+  assert.equal(chatDocument.elements["chat-messages"].children.length, 40);
+  assert.equal(chatDocument.elements["chat-messages"].children[0].textContent, "질문 1");
 });

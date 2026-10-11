@@ -1,6 +1,8 @@
 import { getChatHistory, sendChat } from "./api/api.js";
 import { ApiError } from "./api/errors.js";
 
+const HISTORY_PAGE_SIZE = 20;
+
 export function getChatErrorMessage(error) {
   if (error instanceof ApiError) {
     return error.message;
@@ -23,15 +25,21 @@ export function initializeChat({
   const questionInput = document.querySelector("#chat-question");
   const submitButton = document.querySelector("#chat-submit");
   const newChatButton = document.querySelector("#new-chat-button");
+  const loadMoreButton = document.querySelector("#load-more-history");
   const messages = document.querySelector("#chat-messages");
   const message = document.querySelector("#chat-message");
 
-  if (!form || !questionInput || !submitButton || !newChatButton || !messages || !message) {
+  if (!form || !questionInput || !submitButton || !newChatButton || !loadMoreButton || !messages || !message) {
     return;
   }
 
   let requestPending = false;
   let requestGeneration = 0;
+  let historyItems = [];
+  let historyOffset = 0;
+  let historyPending = false;
+  let loadedConversationId = null;
+  let hasMoreHistory = false;
 
   function setMessage(text, state = "") {
     message.textContent = text;
@@ -49,7 +57,13 @@ export function initializeChat({
   function reset() {
     requestGeneration += 1;
     requestPending = false;
+    historyItems = [];
+    historyOffset = 0;
+    historyPending = false;
+    loadedConversationId = null;
+    hasMoreHistory = false;
     messages.replaceChildren();
+    loadMoreButton.hidden = true;
     questionInput.value = "";
     questionInput.disabled = false;
     submitButton.disabled = false;
@@ -73,21 +87,53 @@ export function initializeChat({
     appendBubble("assistant", `답변을 생성하지 못했습니다.${reason}`);
   }
 
-  async function loadConversation(conversationId) {
-    const generation = ++requestGeneration;
-    requestPending = false;
+  function renderHistory() {
     messages.replaceChildren();
-    questionInput.disabled = false;
-    submitButton.disabled = false;
-    setMessage("대화 기록을 불러오는 중입니다.");
+    for (const item of [...historyItems].sort(
+      (left, right) => left.created_at.localeCompare(right.created_at) || left.id - right.id,
+    )) {
+      appendHistoryItem(item);
+    }
+  }
+
+  function mergeHistoryItems(items) {
+    const itemsById = new Map(historyItems.map((item) => [item.id, item]));
+    for (const item of items) {
+      itemsById.set(item.id, item);
+    }
+    historyItems = [...itemsById.values()];
+  }
+
+  async function loadHistoryPage(resetHistory) {
+    if (historyPending || loadedConversationId === null) {
+      return;
+    }
+
+    const conversationId = loadedConversationId;
+    const generation = ++requestGeneration;
+    historyPending = true;
+    if (resetHistory) {
+      historyItems = [];
+      historyOffset = 0;
+      hasMoreHistory = false;
+      messages.replaceChildren();
+    }
+    loadMoreButton.hidden = true;
+    setMessage(resetHistory ? "대화 기록을 불러오는 중입니다." : "이전 기록을 불러오는 중입니다.");
     try {
-      const response = await chatApi.getChatHistory({ conversationId });
+      const response = await chatApi.getChatHistory({
+        conversationId,
+        limit: HISTORY_PAGE_SIZE,
+        offset: historyOffset,
+      });
       if (generation !== requestGeneration || conversationId !== getConversationId()) {
         return;
       }
-      for (const item of [...response.items].reverse()) {
-        appendHistoryItem(item);
-      }
+      mergeHistoryItems(response.items);
+      historyOffset += response.items.length;
+      hasMoreHistory = response.items.length === HISTORY_PAGE_SIZE;
+      renderHistory();
+      loadMoreButton.hidden = !hasMoreHistory;
       setMessage(response.items.length === 0 ? "대화 기록이 없습니다." : "");
     } catch (error) {
       if (generation !== requestGeneration) {
@@ -96,8 +142,26 @@ export function initializeChat({
       if (!onProtectedApiError(error)) {
         setMessage(getChatErrorMessage(error), "error");
       }
+    } finally {
+      if (generation === requestGeneration) {
+        historyPending = false;
+        loadMoreButton.hidden = !hasMoreHistory;
+      }
     }
   }
+
+  async function loadConversation(conversationId) {
+    // 같은 모듈 안의 이전 방 조회가 늦게 끝나도 새 선택을 덮어쓰지 못하게 한다.
+    requestGeneration += 1;
+    historyPending = false;
+    requestPending = false;
+    questionInput.disabled = false;
+    submitButton.disabled = false;
+    loadedConversationId = conversationId;
+    await loadHistoryPage(true);
+  }
+
+  loadMoreButton.addEventListener("click", () => { void loadHistoryPage(false); });
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -148,6 +212,7 @@ export function initializeChat({
   return {
     getIsPending: () => requestPending,
     loadConversation,
+    loadMoreHistory: () => loadHistoryPage(false),
     reset,
   };
 }
