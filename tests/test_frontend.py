@@ -26,6 +26,7 @@ def test_frontend_entrypoint_is_served(frontend_client: TestClient) -> None:
     assert 'data-auth-api-mode="mock"' not in response.text
     assert 'data-chat-api-mode="mock"' not in response.text
     assert 'data-health-api-mode="mock"' not in response.text
+    assert 'get("apiMode") === "mock"' in response.text
 
 
 @pytest.mark.parametrize(

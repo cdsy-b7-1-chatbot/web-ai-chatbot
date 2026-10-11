@@ -62,7 +62,7 @@
         <header class="chat-header">
           <div class="chat-header-brand">
             <button id="conversation-toggle" class="conversation-toggle" type="button" aria-controls="conversation-panel" aria-expanded="false" aria-label="대화방 열기" title="대화방 열기">
-              <span class="panel-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+              <span class="panel-icon" aria-hidden="true"></span>
             </button>
             <p id="chat-title" class="chat-brand">AI Chatbot</p>
           </div>
@@ -101,6 +101,12 @@
       </section>
 
     </main>
+    <script>
+      if (new URLSearchParams(window.location.search).get("apiMode") === "mock") {
+        document.documentElement.dataset.authApiMode = "mock";
+        document.documentElement.dataset.chatApiMode = "mock";
+      }
+    </script>
     <script type="module" src="/static/js/main.js"></script>
   </body>
 </html>
