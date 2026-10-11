@@ -62,16 +62,26 @@
         <p class="eyebrow">AI CHATBOT</p>
         <h2 id="chat-title">환영합니다, <span id="current-username"></span>님</h2>
         <p class="description">질문을 입력하면 AI가 답변합니다.</p>
-        <button id="new-chat-button" type="button">새 대화</button>
-        <div id="chat-messages" class="chat-messages" role="log" aria-live="polite" aria-label="대화 내용"></div>
-        <form id="chat-form" class="chat-form" novalidate>
-          <label for="chat-question">질문</label>
-          <textarea id="chat-question" name="question" rows="3" maxlength="5000" required></textarea>
-          <button id="chat-submit" type="submit">전송</button>
-        </form>
-        <p id="chat-message" class="chat-message" role="status" aria-live="polite"></p>
-        <button id="logout-button" type="button">로그아웃</button>
-        <p id="logout-message" role="status" aria-live="polite"></p>
+        <div class="chat-layout">
+          <aside class="conversation-panel" aria-labelledby="conversation-title">
+            <h3 id="conversation-title">대화방</h3>
+            <div id="conversation-list" class="conversation-list" aria-live="polite"></div>
+            <p id="conversation-message" class="conversation-message" role="status" aria-live="polite"></p>
+            <button id="retry-conversations" type="button" hidden>다시 시도</button>
+          </aside>
+          <div class="chat-content">
+            <button id="new-chat-button" type="button">새 대화</button>
+            <div id="chat-messages" class="chat-messages" role="log" aria-live="polite" aria-label="대화 내용"></div>
+            <form id="chat-form" class="chat-form" novalidate>
+              <label for="chat-question">질문</label>
+              <textarea id="chat-question" name="question" rows="3" maxlength="5000" required></textarea>
+              <button id="chat-submit" type="submit">전송</button>
+            </form>
+            <p id="chat-message" class="chat-message" role="status" aria-live="polite"></p>
+            <button id="logout-button" type="button">로그아웃</button>
+            <p id="logout-message" role="status" aria-live="polite"></p>
+          </div>
+        </div>
       </section>
 
       <section class="status-card" aria-labelledby="status-title">
