@@ -23,6 +23,7 @@ def test_frontend_entrypoint_is_served(frontend_client: TestClient) -> None:
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
     assert 'src="/static/js/main.js"' in response.text
+    assert 'data-chat-api-mode="mock"' in response.text
 
 
 @pytest.mark.parametrize(
