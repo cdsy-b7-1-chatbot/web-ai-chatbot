@@ -339,7 +339,13 @@ test("기록 조회 중 보낸 질문의 응답은 늦은 기록 응답으로 �
   const loadingHistory = controller.loadConversation(5);
   chatDocument.elements["chat-question"].value = "새 질문";
   const sendingQuestion = trigger(chatDocument.elements["chat-form"]);
-  resolveChat({ answer: "새 답변", conversation_id: 5, truncated: false });
+  resolveChat({
+    chat_id: 2,
+    conversation_id: 5,
+    answer: "새 답변",
+    created_at: "2026-10-11T00:01:00Z",
+    truncated: false,
+  });
   await sendingQuestion;
   assert.deepEqual(
     chatDocument.elements["chat-messages"].children.map((bubble) => bubble.textContent),
@@ -350,8 +356,70 @@ test("기록 조회 중 보낸 질문의 응답은 늦은 기록 응답으로 �
   await loadingHistory;
   assert.deepEqual(
     chatDocument.elements["chat-messages"].children.map((bubble) => bubble.textContent),
-    ["새 질문", "새 답변"],
+    ["이전 질문", "이전 답변", "새 질문", "새 답변"],
   );
+});
+
+test("기록 응답이 먼저 와도 과거 기록과 진행 중인 질문·답변을 함께 유지한다", async () => {
+  const chatDocument = createChatDocument();
+  globalThis.document = chatDocument;
+  const historyItems = Array.from({ length: 20 }, (_, index) => ({
+    id: index + 1,
+    question: `이전 질문 ${index + 1}`,
+    answer: `이전 답변 ${index + 1}`,
+    status: "success",
+    created_at: `2026-10-11T00:${String(index).padStart(2, "0")}:00Z`,
+  }));
+  let resolveHistory;
+  let resolveChat;
+  const requests = [];
+  const historyRequest = new Promise((resolve) => { resolveHistory = resolve; });
+  const chatRequest = new Promise((resolve) => { resolveChat = resolve; });
+  const controller = initializeChat({
+    chatApi: {
+      getChatHistory: async (options) => {
+        requests.push(options);
+        return options.offset === 0 ? historyRequest : { items: [] };
+      },
+      sendChat: async () => chatRequest,
+    },
+    getConversationId: () => 5,
+  });
+
+  const loadingHistory = controller.loadConversation(5);
+  chatDocument.elements["chat-question"].value = "새 질문";
+  const sendingQuestion = trigger(chatDocument.elements["chat-form"]);
+  resolveHistory({ items: historyItems });
+  await loadingHistory;
+  assert.equal(chatDocument.elements["chat-messages"].attributes.get("aria-busy"), "true");
+  assert.equal(chatDocument.elements["load-more-history"].hidden, false);
+  assert.deepEqual(
+    chatDocument.elements["chat-messages"].children.slice(-3).map((bubble) => bubble.textContent),
+    ["이전 질문 20", "이전 답변 20", "새 질문"],
+  );
+
+  resolveChat({
+    chat_id: 21,
+    conversation_id: 5,
+    answer: "새 답변",
+    created_at: "2026-10-11T00:20:00Z",
+    truncated: false,
+  });
+  await sendingQuestion;
+  assert.equal(chatDocument.elements["chat-messages"].attributes.get("aria-busy"), "false");
+  assert.equal(chatDocument.elements["load-more-history"].hidden, false);
+  assert.deepEqual(
+    chatDocument.elements["chat-messages"].children.slice(-4).map((bubble) => bubble.textContent),
+    ["이전 질문 20", "이전 답변 20", "새 질문", "새 답변"],
+  );
+  assert.equal(
+    chatDocument.elements["chat-messages"].children.filter((bubble) => bubble.textContent === "새 질문").length,
+    1,
+  );
+
+  await controller.loadMoreHistory();
+  assert.deepEqual(requests.map(({ offset }) => offset), [0, 20]);
+  assert.equal(chatDocument.elements["load-more-history"].hidden, true);
 });
 
 test("추가 기록은 offset으로 불러오고 중복 없이 시간순으로 표시한다", async () => {

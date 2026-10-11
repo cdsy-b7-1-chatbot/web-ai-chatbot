@@ -37,6 +37,7 @@ export function initializeChat({
   let historyPending = false;
   let loadedConversationId = null;
   let hasMoreHistory = false;
+  let pendingQuestion = null;
 
   function setMessage(text, state = "") {
     message.textContent = text;
@@ -89,6 +90,7 @@ export function initializeChat({
     historyPending = false;
     loadedConversationId = null;
     hasMoreHistory = false;
+    pendingQuestion = null;
     messages.replaceChildren();
     setHasMessages(false);
     updateMessagesBusy();
@@ -124,6 +126,9 @@ export function initializeChat({
       (left, right) => left.created_at.localeCompare(right.created_at) || left.id - right.id,
     )) {
       appendHistoryItem(item);
+    }
+    if (pendingQuestion) {
+      appendBubble("user", pendingQuestion.question);
     }
   }
 
@@ -190,6 +195,7 @@ export function initializeChat({
     historyRequestGeneration += 1;
     historyPending = false;
     requestPending = false;
+    pendingQuestion = null;
     updateMessagesBusy();
     questionInput.disabled = false;
     submitButton.disabled = false;
@@ -214,6 +220,7 @@ export function initializeChat({
 
     requestPending = true;
     const generation = messageRequestGeneration;
+    pendingQuestion = { generation, question };
     updateMessagesBusy();
     questionInput.disabled = true;
     submitButton.disabled = true;
@@ -227,10 +234,23 @@ export function initializeChat({
         return;
       }
 
-      // 아직 도착하지 않은 기록 응답이 방금 표시한 질문·답변을 덮어쓰지 않게 한다.
-      historyRequestGeneration += 1;
-      historyPending = false;
-      appendBubble("assistant", response.answer);
+      if (response.chat_id !== undefined && response.created_at) {
+        pendingQuestion = null;
+        mergeHistoryItems([
+          {
+            id: response.chat_id,
+            question,
+            answer: response.answer,
+            status: "success",
+            error_code: null,
+            created_at: response.created_at,
+          },
+        ]);
+        renderHistory();
+      } else {
+        pendingQuestion = null;
+        appendBubble("assistant", response.answer);
+      }
       setMessage(response.truncated ? "답변이 길이 제한으로 일부 잘렸습니다." : "");
       onChatSuccess(response);
     } catch (error) {
