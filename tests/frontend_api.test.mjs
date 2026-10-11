@@ -255,3 +255,43 @@ test("Mock 채팅 API는 인증·입력·대화방 오류를 ApiError로 전달�
     message: "대화방을 찾을 수 없습니다.",
   });
 });
+
+test("Mock 기록 API는 최근 대화방과 대화방별 페이지 기록을 제공한다", async () => {
+  document.documentElement.dataset.chatApiMode = "mock";
+  const first = await api.sendChat("첫 대화");
+  await api.sendChat("첫 대화 후속", first.conversation_id);
+  const second = await api.sendChat("둘째 대화");
+
+  const conversations = await api.getConversations();
+  assert.equal(conversations.items[0].id, second.conversation_id);
+  assert.equal(conversations.items[1].id, first.conversation_id);
+
+  const history = await api.getChatHistory({ conversationId: first.conversation_id, limit: 1, offset: 1 });
+  assert.deepEqual(history.items.map((item) => item.question), ["첫 대화"]);
+  await assertApiError(() => api.getChatHistory({ conversationId: 9999 }), {
+    status: 404,
+    error: "NOT_FOUND",
+    message: "대화방을 찾을 수 없습니다.",
+  });
+});
+
+test("Real 기록 API는 목록 경로와 페이지 쿼리 계약을 사용한다", async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+    document.documentElement.dataset.chatApiMode = "mock";
+  });
+
+  document.documentElement.dataset.chatApiMode = "real";
+  const requests = [];
+  globalThis.fetch = async (url, options) => {
+    requests.push({ url, options });
+    return { ok: true, status: 200, json: async () => ({ items: [] }) };
+  };
+  assert.deepEqual(await api.getConversations(), { items: [] });
+  assert.deepEqual(await api.getChatHistory({ conversationId: 7, limit: 20, offset: 40 }), { items: [] });
+  assert.deepEqual(requests, [
+    { url: "/api/conversations", options: { credentials: "same-origin" } },
+    { url: "/api/me/chats?limit=20&offset=40&conversation_id=7", options: { credentials: "same-origin" } },
+  ]);
+});

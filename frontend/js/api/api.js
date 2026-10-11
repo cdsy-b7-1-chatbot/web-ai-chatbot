@@ -1,5 +1,7 @@
 import {
   getMockCurrentUser,
+  getMockChatHistory,
+  getMockConversations,
   getMockHealthStatus,
   loginMock,
   logoutMock,
@@ -8,6 +10,8 @@ import {
 } from "./mock.js";
 import {
   getRealCurrentUser,
+  getRealChatHistory,
+  getRealConversations,
   getRealHealthStatus,
   loginReal,
   logoutReal,
@@ -35,8 +39,16 @@ const apiByFeature = {
     },
   },
   chat: {
-    mock: sendChatMock,
-    real: sendChatReal,
+    mock: {
+      getChatHistory: getMockChatHistory,
+      getConversations: getMockConversations,
+      sendChat: sendChatMock,
+    },
+    real: {
+      getChatHistory: getRealChatHistory,
+      getConversations: getRealConversations,
+      sendChat: sendChatReal,
+    },
   },
 };
 
@@ -84,5 +96,15 @@ export async function getCurrentUser() {
  */
 export async function sendChat(question, conversationId = null) {
   const mode = getFeatureMode("chat");
-  return apiByFeature.chat[mode](question, conversationId);
+  return apiByFeature.chat[mode].sendChat(question, conversationId);
+}
+
+export async function getConversations() {
+  const mode = getFeatureMode("chat");
+  return apiByFeature.chat[mode].getConversations();
+}
+
+export async function getChatHistory(options = {}) {
+  const mode = getFeatureMode("chat");
+  return apiByFeature.chat[mode].getChatHistory(options);
 }

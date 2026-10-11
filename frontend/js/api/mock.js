@@ -6,6 +6,7 @@ let currentUserId = null;
 let nextConversationId = 1;
 let nextChatId = 1;
 const conversationsById = new Map();
+const chatsById = new Map();
 
 function normalizeUsername(username) {
   return typeof username === "string" ? username.toLowerCase() : "";
@@ -43,6 +44,28 @@ function validateChatRequest(question, conversationId) {
   ) {
     throw new ApiError(422, "VALIDATION_ERROR", "입력값이 올바르지 않습니다.");
   }
+}
+
+function validateHistoryRequest(conversationId, limit, offset) {
+  if (
+    (conversationId !== null && (!Number.isInteger(conversationId) || conversationId <= 0)) ||
+    !Number.isInteger(limit) ||
+    limit < 1 ||
+    limit > 100 ||
+    !Number.isInteger(offset) ||
+    offset < 0
+  ) {
+    throw new ApiError(422, "VALIDATION_ERROR", "입력값이 올바르지 않습니다.");
+  }
+}
+
+function toConversationResponse(conversation) {
+  return {
+    id: conversation.id,
+    title: conversation.title,
+    created_at: conversation.createdAt,
+    updated_at: conversation.updatedAt,
+  };
 }
 
 /**
@@ -94,7 +117,14 @@ export async function sendChatMock(question, conversationId = null) {
 
   let conversation;
   if (conversationId === null) {
-    conversation = { id: nextConversationId, userId: user.id };
+    const now = new Date().toISOString();
+    conversation = {
+      id: nextConversationId,
+      userId: user.id,
+      title: question.trim().slice(0, 100),
+      createdAt: now,
+      updatedAt: now,
+    };
     nextConversationId += 1;
     conversationsById.set(conversation.id, conversation);
   } else {
@@ -104,13 +134,51 @@ export async function sendChatMock(question, conversationId = null) {
     }
   }
 
+  const createdAt = new Date().toISOString();
+  conversation.updatedAt = createdAt;
   const response = {
     chat_id: nextChatId,
     conversation_id: conversation.id,
     answer: `Mock 답변: ${question.trim()}`,
-    created_at: new Date().toISOString(),
+    created_at: createdAt,
     truncated: false,
   };
+  chatsById.set(response.chat_id, {
+    id: response.chat_id,
+    user_id: user.id,
+    conversation_id: conversation.id,
+    question: question.trim(),
+    answer: response.answer,
+    status: "success",
+    error_code: null,
+    created_at: response.created_at,
+  });
   nextChatId += 1;
   return response;
+}
+
+export async function getMockConversations() {
+  const user = getCurrentMockUser();
+  const items = [...conversationsById.values()]
+    .filter((conversation) => conversation.userId === user.id)
+    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt) || right.id - left.id)
+    .map(toConversationResponse);
+  return { items };
+}
+
+export async function getMockChatHistory({ conversationId = null, limit = 50, offset = 0 } = {}) {
+  const user = getCurrentMockUser();
+  validateHistoryRequest(conversationId, limit, offset);
+  if (conversationId !== null) {
+    const conversation = conversationsById.get(conversationId);
+    if (!conversation || conversation.userId !== user.id) {
+      throw new ApiError(404, "NOT_FOUND", "대화방을 찾을 수 없습니다.");
+    }
+  }
+
+  const items = [...chatsById.values()]
+    .filter((chat) => chat.user_id === user.id && (conversationId === null || chat.conversation_id === conversationId))
+    .sort((left, right) => right.created_at.localeCompare(left.created_at) || right.id - left.id)
+    .slice(offset, offset + limit);
+  return { items };
 }

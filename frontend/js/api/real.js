@@ -3,6 +3,8 @@ import { ApiError } from "./errors.js";
 const HEALTH_ENDPOINT = "/api/health";
 const AUTH_ENDPOINT = "/api/auth";
 const CHAT_ENDPOINT = "/api/chat";
+const CONVERSATIONS_ENDPOINT = "/api/conversations";
+const CHAT_HISTORY_ENDPOINT = "/api/me/chats";
 
 async function requestJson(endpoint, options = {}) {
   const response = await fetch(endpoint, {
@@ -72,4 +74,19 @@ export async function sendChatReal(question, conversationId = null) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ question, conversation_id: conversationId }),
   });
+}
+
+export async function getRealConversations() {
+  return requestJson(CONVERSATIONS_ENDPOINT);
+}
+
+/**
+ * 기록 API의 선택적 대화방과 페이지 인자를 서버 계약 그대로 쿼리 문자열로 전달한다.
+ */
+export async function getRealChatHistory({ conversationId = null, limit = 50, offset = 0 } = {}) {
+  const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  if (conversationId !== null) {
+    params.set("conversation_id", String(conversationId));
+  }
+  return requestJson(`${CHAT_HISTORY_ENDPOINT}?${params}`);
 }
