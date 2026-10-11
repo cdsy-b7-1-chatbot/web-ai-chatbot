@@ -85,6 +85,29 @@ test("모바일 대화방 버튼은 패널을 열고 대화를 선택하면 닫�
   assert.equal(elements["conversation-toggle"].attributes.get("aria-label"), "대화방 열기");
 });
 
+test("데스크톱 대화방은 처음부터 펼쳐지고 첫 토글에서 접힌다", async () => {
+  const originalWindow = globalThis.window;
+  globalThis.window = { matchMedia: () => ({ matches: true }) };
+  const historyDocument = createHistoryDocument();
+  globalThis.document = historyDocument;
+  initializeHistory({ historyApi: { getConversations: async () => ({ items: [] }) } });
+  await Promise.resolve();
+
+  const { elements } = historyDocument;
+  assert.equal(elements["chat-layout"].dataset.conversationsOpen, "true");
+  assert.equal(elements["conversation-toggle"].attributes.get("aria-expanded"), "true");
+  assert.equal(elements["conversation-toggle"].attributes.get("aria-label"), "대화방 닫기");
+  await click(elements["conversation-toggle"]);
+  assert.equal(elements["chat-layout"].dataset.conversationsOpen, "false");
+  assert.equal(elements["conversation-toggle"].attributes.get("aria-expanded"), "false");
+
+  if (originalWindow === undefined) {
+    delete globalThis.window;
+  } else {
+    globalThis.window = originalWindow;
+  }
+});
+
 test("빈 목록·오류·재시도를 화면 상태로 전달한다", async () => {
   const historyDocument = createHistoryDocument();
   globalThis.document = historyDocument;
