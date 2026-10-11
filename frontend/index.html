@@ -17,7 +17,18 @@
         <p class="description">프론트엔드 개발 기반을 준비했습니다.</p>
       </section>
 
-      <section class="auth-card" aria-labelledby="auth-title">
+      <section id="auth-checking" class="auth-state-card" role="status" aria-live="polite" hidden>
+        <h2>인증 상태를 확인하고 있습니다.</h2>
+        <p>잠시만 기다려 주세요.</p>
+      </section>
+
+      <section id="auth-error" class="auth-state-card" aria-labelledby="auth-error-title" hidden>
+        <h2 id="auth-error-title">인증 상태를 확인할 수 없습니다.</h2>
+        <p id="auth-state-message" role="alert"></p>
+        <button id="retry-auth" type="button">다시 시도</button>
+      </section>
+
+      <section id="auth-screen" class="auth-card" aria-labelledby="auth-title">
         <div class="auth-heading">
           <p class="eyebrow">시작하기</p>
           <h2 id="auth-title">로그인</h2>
@@ -45,6 +56,12 @@
         </form>
 
         <p id="auth-message" class="auth-message" role="status" aria-live="polite"></p>
+      </section>
+
+      <section id="chat-screen" class="chat-card" aria-labelledby="chat-title" hidden>
+        <p class="eyebrow">AI CHATBOT</p>
+        <h2 id="chat-title">환영합니다, <span id="current-username"></span>님</h2>
+        <p class="description">채팅 기능은 다음 작업에서 준비됩니다.</p>
       </section>
 
       <section class="status-card" aria-labelledby="status-title">
