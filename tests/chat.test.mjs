@@ -90,6 +90,7 @@ test("첫 응답의 대화방 ID를 후속 질문에 사용하고 새 대화에�
   const chatDocument = createChatDocument();
   globalThis.document = chatDocument;
   const requests = [];
+  let conversationId = null;
   const controller = initializeChat({
     chatApi: {
       sendChat: async (...args) => {
@@ -97,6 +98,9 @@ test("첫 응답의 대화방 ID를 후속 질문에 사용하고 새 대화에�
         return { answer: "답변", conversation_id: 11, truncated: false };
       },
     },
+    getConversationId: () => conversationId,
+    onChatSuccess: (response) => { conversationId = response.conversation_id; },
+    onNewConversation: () => { conversationId = null; },
   });
 
   chatDocument.elements["chat-question"].value = "첫 질문";
@@ -104,10 +108,10 @@ test("첫 응답의 대화방 ID를 후속 질문에 사용하고 새 대화에�
   chatDocument.elements["chat-question"].value = "후속 질문";
   await trigger(chatDocument.elements["chat-form"]);
   assert.deepEqual(requests, [["첫 질문", null], ["후속 질문", 11]]);
-  assert.equal(controller.getConversationId(), 11);
+  assert.equal(conversationId, 11);
 
   await click(chatDocument.elements["new-chat-button"]);
-  assert.equal(controller.getConversationId(), null);
+  assert.equal(conversationId, null);
   assert.equal(chatDocument.elements["chat-messages"].children.length, 0);
   assert.equal(chatDocument.elements["chat-question"].focused, true);
 });
@@ -190,7 +194,6 @@ test("새 대화·인증 해제 뒤에는 진행 중이던 응답을 표시하�
   resolveRequest({ answer: "늦은 답변", conversation_id: 8, truncated: false });
   await pendingSubmit;
   assert.equal(chatDocument.elements["chat-messages"].children.length, 0);
-  assert.equal(controller.getConversationId(), null);
   assert.equal(controller.getIsPending(), false);
 
   const unauthorizedDocument = createChatDocument();
@@ -209,4 +212,64 @@ test("새 대화·인증 해제 뒤에는 진행 중이던 응답을 표시하�
   assert.equal(protectedErrors.length, 1);
   assert.equal(unauthorizedDocument.elements["chat-message"].textContent, "");
   assert.equal(unauthorizedController.getIsPending(), false);
+});
+
+test("선택한 방의 최신순 기록을 시간순으로 표시하고 실패 기록을 안내한다", async () => {
+  const chatDocument = createChatDocument();
+  globalThis.document = chatDocument;
+  let selectedConversationId = 9;
+  const controller = initializeChat({
+    chatApi: {
+      getChatHistory: async ({ conversationId }) => {
+        assert.equal(conversationId, 9);
+        return {
+          items: [
+            { id: 2, question: "실패 질문", answer: null, status: "failed", error_code: "AI_TIMEOUT" },
+            { id: 1, question: "처음 질문", answer: "처음 답변", status: "success", error_code: null },
+          ],
+        };
+      },
+      sendChat: async () => ({ answer: "unused" }),
+    },
+    getConversationId: () => selectedConversationId,
+  });
+  await controller.loadConversation(9);
+  assert.deepEqual(
+    chatDocument.elements["chat-messages"].children.map((bubble) => [bubble.dataset.role, bubble.textContent]),
+    [
+      ["user", "처음 질문"],
+      ["assistant", "처음 답변"],
+      ["user", "실패 질문"],
+      ["assistant", "답변을 생성하지 못했습니다. (AI_TIMEOUT)"],
+    ],
+  );
+  selectedConversationId = 10;
+  await controller.loadConversation(9);
+  assert.equal(chatDocument.elements["chat-messages"].children.length, 0);
+});
+
+test("다른 대화방을 선택하면 이전 기록 응답을 무시한다", async () => {
+  const chatDocument = createChatDocument();
+  globalThis.document = chatDocument;
+  let selectedConversationId = 1;
+  let resolveFirst;
+  const firstRequest = new Promise((resolve) => { resolveFirst = resolve; });
+  const controller = initializeChat({
+    chatApi: {
+      getChatHistory: async ({ conversationId }) => (
+        conversationId === 1 ? firstRequest : { items: [{ id: 2, question: "둘째", answer: "방", status: "success" }] }
+      ),
+      sendChat: async () => ({ answer: "unused" }),
+    },
+    getConversationId: () => selectedConversationId,
+  });
+  const loadingFirst = controller.loadConversation(1);
+  selectedConversationId = 2;
+  await controller.loadConversation(2);
+  resolveFirst({ items: [{ id: 1, question: "첫째", answer: "방", status: "success" }] });
+  await loadingFirst;
+  assert.deepEqual(
+    chatDocument.elements["chat-messages"].children.map((bubble) => bubble.textContent),
+    ["둘째", "방"],
+  );
 });

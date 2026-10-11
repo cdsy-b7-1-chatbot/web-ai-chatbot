@@ -53,6 +53,8 @@ export async function initializeApplication({
   let authState = AUTH_STATES.CHECKING;
   let chatInitialized = false;
   let chatController = null;
+  let historyController = null;
+  let currentConversationId = null;
   let authenticationRequest = null;
   let requestGeneration = 0;
 
@@ -70,7 +72,9 @@ export async function initializeApplication({
       usernameElement.textContent = "";
       document.body.dataset.currentConversationId = "";
       if (nextState === AUTH_STATES.UNAUTHENTICATED) {
+        currentConversationId = null;
         chatController?.reset();
+        historyController?.reset();
       }
     }
 
@@ -92,8 +96,30 @@ export async function initializeApplication({
         if (generation !== requestGeneration) return;
         renderAuthState(AUTH_STATES.AUTHENTICATED, user);
         if (!chatInitialized) {
-          chatController = initializeChatFn({ onProtectedApiError: handleProtectedApiError });
-          initializeHistoryFn();
+          chatController = initializeChatFn({
+            getConversationId: () => currentConversationId,
+            onChatSuccess: (response) => {
+              currentConversationId = response.conversation_id;
+              document.body.dataset.currentConversationId = String(currentConversationId);
+              historyController?.setSelectedConversation(currentConversationId);
+              void historyController?.refresh();
+            },
+            onNewConversation: () => {
+              currentConversationId = null;
+              document.body.dataset.currentConversationId = "";
+              historyController?.setSelectedConversation(null);
+            },
+            onProtectedApiError: handleProtectedApiError,
+          });
+          historyController = initializeHistoryFn({
+            onConversationSelect: (conversationId) => {
+              currentConversationId = conversationId;
+              document.body.dataset.currentConversationId = String(conversationId);
+              historyController?.setSelectedConversation(conversationId);
+              void chatController?.loadConversation(conversationId);
+            },
+            onProtectedApiError: handleProtectedApiError,
+          });
           chatInitialized = true;
         }
       })

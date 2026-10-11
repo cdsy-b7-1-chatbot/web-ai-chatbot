@@ -50,6 +50,10 @@ function createDependencies(getCurrentUser) {
   let chatStarts = 0;
   let chatResets = 0;
   let chatOptions;
+  let historyOptions;
+  const chatLoads = [];
+  const historySelections = [];
+  let historyRefreshes = 0;
   let historyStarts = 0;
   return {
     dependencies: {
@@ -65,13 +69,26 @@ function createDependencies(getCurrentUser) {
       initializeChatFn: (options) => {
         chatStarts += 1;
         chatOptions = options;
-        return { reset: () => { chatResets += 1; } };
+        return {
+          loadConversation: (conversationId) => { chatLoads.push(conversationId); },
+          reset: () => { chatResets += 1; },
+        };
       },
-      initializeHistoryFn: () => { historyStarts += 1; },
+      initializeHistoryFn: (options) => {
+        historyStarts += 1;
+        historyOptions = options;
+        return {
+          refresh: () => { historyRefreshes += 1; },
+          reset: () => {},
+          setSelectedConversation: (conversationId) => { historySelections.push(conversationId); },
+        };
+      },
     },
     getLoginSuccessCallback: () => loginSuccessCallback,
     getLogoutCallback: () => logoutCallback,
     getChatOptions: () => chatOptions,
+    getHistoryOptions: () => historyOptions,
+    getCoordination: () => ({ chatLoads, historyRefreshes, historySelections }),
     getStarts: () => ({ chatStarts, chatResets, historyStarts }),
   };
 }
@@ -218,6 +235,27 @@ test("채팅 모듈에는 보호 API 오류를 인증 상태로 연결하는 콜
   assert.equal(setup.getChatOptions().onProtectedApiError(new ApiError(401, "UNAUTHORIZED", "만료")), true);
   assert.equal(application.getAuthState(), AUTH_STATES.UNAUTHENTICATED);
   assert.equal(setup.getStarts().chatResets, 1);
+});
+
+test("대화방 선택·새 대화·질문 성공은 main.js가 공통 대화방 상태로 조정한다", async () => {
+  const mainDocument = createMainDocument();
+  globalThis.document = mainDocument;
+  const setup = createDependencies(async () => ({ id: 11, username: "conversation_user" }));
+  await initializeApplication(setup.dependencies);
+
+  setup.getHistoryOptions().onConversationSelect(7);
+  assert.equal(mainDocument.body.dataset.currentConversationId, "7");
+  assert.deepEqual(setup.getCoordination().chatLoads, [7]);
+  assert.deepEqual(setup.getCoordination().historySelections, [7]);
+
+  setup.getChatOptions().onChatSuccess({ conversation_id: 8 });
+  assert.equal(mainDocument.body.dataset.currentConversationId, "8");
+  assert.deepEqual(setup.getCoordination().historySelections, [7, 8]);
+  assert.equal(setup.getCoordination().historyRefreshes, 1);
+
+  setup.getChatOptions().onNewConversation();
+  assert.equal(mainDocument.body.dataset.currentConversationId, "");
+  assert.deepEqual(setup.getCoordination().historySelections, [7, 8, null]);
 });
 
 test("인증 확인 중에는 인증·채팅 화면을 함께 숨긴다", async () => {

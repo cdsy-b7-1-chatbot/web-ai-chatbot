@@ -1,4 +1,4 @@
-import { sendChat } from "./api/api.js";
+import { getChatHistory, sendChat } from "./api/api.js";
 import { ApiError } from "./api/errors.js";
 
 export function getChatErrorMessage(error) {
@@ -12,7 +12,13 @@ export function getChatErrorMessage(error) {
 /**
  * 채팅 화면의 입력·표시 상태만 관리하고, 인증 전환 같은 전역 상태는 main.js에 맡긴다.
  */
-export function initializeChat({ chatApi = { sendChat }, onProtectedApiError = () => false } = {}) {
+export function initializeChat({
+  chatApi = { getChatHistory, sendChat },
+  getConversationId = () => null,
+  onChatSuccess = () => {},
+  onNewConversation = () => {},
+  onProtectedApiError = () => false,
+} = {}) {
   const form = document.querySelector("#chat-form");
   const questionInput = document.querySelector("#chat-question");
   const submitButton = document.querySelector("#chat-submit");
@@ -25,7 +31,6 @@ export function initializeChat({ chatApi = { sendChat }, onProtectedApiError = (
   }
 
   let requestPending = false;
-  let conversationId = null;
   let requestGeneration = 0;
 
   function setMessage(text, state = "") {
@@ -44,7 +49,6 @@ export function initializeChat({ chatApi = { sendChat }, onProtectedApiError = (
   function reset() {
     requestGeneration += 1;
     requestPending = false;
-    conversationId = null;
     messages.replaceChildren();
     questionInput.value = "";
     questionInput.disabled = false;
@@ -54,8 +58,46 @@ export function initializeChat({ chatApi = { sendChat }, onProtectedApiError = (
 
   newChatButton.addEventListener("click", () => {
     reset();
+    onNewConversation();
     questionInput.focus();
   });
+
+  function appendHistoryItem(item) {
+    appendBubble("user", item.question);
+    if (item.status === "success" && item.answer) {
+      appendBubble("assistant", item.answer);
+      return;
+    }
+
+    const reason = item.error_code ? ` (${item.error_code})` : "";
+    appendBubble("assistant", `답변을 생성하지 못했습니다.${reason}`);
+  }
+
+  async function loadConversation(conversationId) {
+    const generation = ++requestGeneration;
+    requestPending = false;
+    messages.replaceChildren();
+    questionInput.disabled = false;
+    submitButton.disabled = false;
+    setMessage("대화 기록을 불러오는 중입니다.");
+    try {
+      const response = await chatApi.getChatHistory({ conversationId });
+      if (generation !== requestGeneration || conversationId !== getConversationId()) {
+        return;
+      }
+      for (const item of [...response.items].reverse()) {
+        appendHistoryItem(item);
+      }
+      setMessage(response.items.length === 0 ? "대화 기록이 없습니다." : "");
+    } catch (error) {
+      if (generation !== requestGeneration) {
+        return;
+      }
+      if (!onProtectedApiError(error)) {
+        setMessage(getChatErrorMessage(error), "error");
+      }
+    }
+  }
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -78,14 +120,14 @@ export function initializeChat({ chatApi = { sendChat }, onProtectedApiError = (
     questionInput.value = "";
     setMessage("AI가 답변을 작성하고 있습니다.");
     try {
-      const response = await chatApi.sendChat(question, conversationId);
+      const response = await chatApi.sendChat(question, getConversationId());
       if (generation !== requestGeneration) {
         return;
       }
 
-      conversationId = response.conversation_id;
       appendBubble("assistant", response.answer);
       setMessage(response.truncated ? "답변이 길이 제한으로 일부 잘렸습니다." : "");
+      onChatSuccess(response);
     } catch (error) {
       if (generation !== requestGeneration) {
         return;
@@ -104,8 +146,8 @@ export function initializeChat({ chatApi = { sendChat }, onProtectedApiError = (
   });
 
   return {
-    getConversationId: () => conversationId,
     getIsPending: () => requestPending,
+    loadConversation,
     reset,
   };
 }

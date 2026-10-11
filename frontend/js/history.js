@@ -12,7 +12,11 @@ function getHistoryErrorMessage(error) {
 /**
  * 목록의 조회·선택 표시만 맡기고, 선택한 방의 기록 표시와 채팅 상태는 상위 조정 모듈에 알린다.
  */
-export function initializeHistory({ historyApi = { getConversations }, onConversationSelect = () => {} } = {}) {
+export function initializeHistory({
+  historyApi = { getConversations },
+  onConversationSelect = () => {},
+  onProtectedApiError = () => false,
+} = {}) {
   const list = document.querySelector("#conversation-list");
   const message = document.querySelector("#conversation-message");
   const retryButton = document.querySelector("#retry-conversations");
@@ -39,8 +43,6 @@ export function initializeHistory({ historyApi = { getConversations }, onConvers
       button.textContent = conversation.title;
       button.setAttribute("aria-current", String(conversation.id === selectedConversationId));
       button.addEventListener("click", () => {
-        selectedConversationId = conversation.id;
-        render();
         onConversationSelect(conversation.id);
       });
       list.append(button);
@@ -66,6 +68,9 @@ export function initializeHistory({ historyApi = { getConversations }, onConvers
       if (generation !== requestGeneration) {
         return;
       }
+      if (onProtectedApiError(error)) {
+        return;
+      }
       conversations = [];
       selectedConversationId = null;
       render();
@@ -85,5 +90,10 @@ export function initializeHistory({ historyApi = { getConversations }, onConvers
 
   retryButton.addEventListener("click", refresh);
   void refresh();
-  return { getSelectedConversationId: () => selectedConversationId, refresh, reset };
+  function setSelectedConversation(conversationId) {
+    selectedConversationId = conversationId;
+    render();
+  }
+
+  return { getSelectedConversationId: () => selectedConversationId, refresh, reset, setSelectedConversation };
 }

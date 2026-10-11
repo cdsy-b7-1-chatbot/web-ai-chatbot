@@ -46,9 +46,13 @@ test("최근 대화방을 표시하고 선택 상태와 콜백을 갱신한다",
   const historyDocument = createHistoryDocument();
   globalThis.document = historyDocument;
   const selected = [];
-  const controller = initializeHistory({
+  let controller;
+  controller = initializeHistory({
     historyApi: { getConversations: async () => ({ items: [{ id: 2, title: "둘째" }, { id: 1, title: "첫째" }] }) },
-    onConversationSelect: (conversationId) => selected.push(conversationId),
+    onConversationSelect: (conversationId) => {
+      selected.push(conversationId);
+      controller.setSelectedConversation(conversationId);
+    },
   });
   await Promise.resolve();
 
