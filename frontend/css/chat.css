@@ -129,34 +129,14 @@
 }
 
 .panel-icon {
-  position: relative;
   display: block;
-  width: 1.05rem;
-  height: 1.05rem;
-  border: 2px solid currentcolor;
-  border-radius: 0.16rem;
+  width: 1.2rem;
+  height: 1.2rem;
 }
 
-.panel-icon::before,
-.panel-icon::after { content: ""; position: absolute; }
-.panel-icon::before { top: 0.12rem; bottom: 0.12rem; right: 0.25rem; border-left: 2px solid currentcolor; }
-.panel-icon::after {
-  top: 50%;
-  left: 0.2rem;
-  width: 0.26rem;
-  height: 0.26rem;
-  border: solid currentcolor;
-  border-width: 0 2px 2px 0;
-  transform: translateY(-50%) rotate(-45deg);
-}
-
-.conversation-toggle[aria-expanded="true"] .panel-icon::before { right: auto; left: 0.25rem; }
-.conversation-toggle[aria-expanded="true"] .panel-icon::after {
-  right: 0.2rem;
-  left: auto;
-  border-width: 0 0 2px 2px;
-  transform: translateY(-50%) rotate(45deg);
-}
+.panel-icon svg { display: none; width: 100%; height: 100%; fill: none; stroke: currentcolor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.25; }
+.conversation-toggle[aria-expanded="true"] .panel-icon-expanded,
+.conversation-toggle[aria-expanded="false"] .panel-icon-collapsed { display: block; }
 .chat-stage { display: grid; min-height: min(34rem, calc(100vh - 15rem)); padding: clamp(1rem, 3vw, 2.5rem) clamp(1rem, 4vw, 4.25rem); }
 .chat-empty-state { align-self: center; max-width: 37rem; margin: 0 auto; }
 .chat-empty-state h2 { margin-bottom: 0.5rem; font-family: Georgia, "Noto Serif KR", serif; font-size: clamp(1.65rem, 3vw, 2.3rem); letter-spacing: -0.035em; line-height: 1.35; }
