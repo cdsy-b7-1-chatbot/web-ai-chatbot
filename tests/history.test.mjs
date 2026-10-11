@@ -25,7 +25,7 @@ class FakeElement {
 }
 
 function createHistoryDocument() {
-  const ids = ["conversation-list", "conversation-message", "retry-conversations"];
+  const ids = ["conversation-list", "conversation-message", "retry-conversations", "chat-layout", "conversation-toggle"];
   const elements = Object.fromEntries(ids.map((id) => [id, new FakeElement()]));
   return {
     querySelector(selector) { return elements[selector.slice(1)] ?? null; },
@@ -63,6 +63,24 @@ test("최근 대화방을 표시하고 선택 상태와 콜백을 갱신한다",
   assert.equal(controller.getSelectedConversationId(), 1);
   assert.deepEqual(selected, [1]);
   assert.equal(elements["conversation-list"].children[1].attributes.get("aria-current"), "true");
+});
+
+test("모바일 대화방 버튼은 패널을 열고 대화를 선택하면 닫는다", async () => {
+  const historyDocument = createHistoryDocument();
+  globalThis.document = historyDocument;
+  const controller = initializeHistory({
+    historyApi: { getConversations: async () => ({ items: [{ id: 2, title: "둘째" }] }) },
+    onConversationSelect: (conversationId) => controller.setSelectedConversation(conversationId),
+  });
+  await Promise.resolve();
+
+  const { elements } = historyDocument;
+  await click(elements["conversation-toggle"]);
+  assert.equal(elements["chat-layout"].dataset.conversationsOpen, "true");
+  assert.equal(elements["conversation-toggle"].attributes.get("aria-expanded"), "true");
+  await click(elements["conversation-list"].children[0]);
+  assert.equal(elements["chat-layout"].dataset.conversationsOpen, "false");
+  assert.equal(elements["conversation-toggle"].attributes.get("aria-expanded"), "false");
 });
 
 test("빈 목록·오류·재시도를 화면 상태로 전달한다", async () => {

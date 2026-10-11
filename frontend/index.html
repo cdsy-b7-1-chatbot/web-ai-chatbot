@@ -62,8 +62,9 @@
         <p class="eyebrow">AI CHATBOT</p>
         <h2 id="chat-title">환영합니다, <span id="current-username"></span>님</h2>
         <p class="description">질문을 입력하면 AI가 답변합니다.</p>
-        <div class="chat-layout">
-          <aside class="conversation-panel" aria-labelledby="conversation-title">
+        <button id="conversation-toggle" class="conversation-toggle" type="button" aria-controls="conversation-panel" aria-expanded="false">대화방</button>
+        <div id="chat-layout" class="chat-layout" data-conversations-open="false">
+          <aside id="conversation-panel" class="conversation-panel" aria-labelledby="conversation-title">
             <h3 id="conversation-title">대화방</h3>
             <div id="conversation-list" class="conversation-list" aria-live="polite"></div>
             <p id="conversation-message" class="conversation-message" role="status" aria-live="polite"></p>

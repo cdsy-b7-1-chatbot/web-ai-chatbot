@@ -20,6 +20,8 @@ export function initializeHistory({
   const list = document.querySelector("#conversation-list");
   const message = document.querySelector("#conversation-message");
   const retryButton = document.querySelector("#retry-conversations");
+  const layout = document.querySelector("#chat-layout");
+  const toggleButton = document.querySelector("#conversation-toggle");
 
   if (!list || !message || !retryButton) {
     return;
@@ -28,6 +30,15 @@ export function initializeHistory({
   let conversations = [];
   let selectedConversationId = null;
   let requestGeneration = 0;
+
+  function setConversationPanelOpen(isOpen) {
+    if (!layout || !toggleButton) {
+      return;
+    }
+
+    layout.dataset.conversationsOpen = String(isOpen);
+    toggleButton.setAttribute("aria-expanded", String(isOpen));
+  }
 
   function setMessage(text, state = "") {
     message.textContent = text;
@@ -44,6 +55,7 @@ export function initializeHistory({
       button.setAttribute("aria-current", String(conversation.id === selectedConversationId));
       button.addEventListener("click", () => {
         onConversationSelect(conversation.id);
+        setConversationPanelOpen(false);
       });
       list.append(button);
     }
@@ -84,11 +96,15 @@ export function initializeHistory({
     conversations = [];
     selectedConversationId = null;
     render();
+    setConversationPanelOpen(false);
     retryButton.hidden = true;
     setMessage("");
   }
 
   retryButton.addEventListener("click", refresh);
+  toggleButton?.addEventListener("click", () => {
+    setConversationPanelOpen(layout?.dataset.conversationsOpen !== "true");
+  });
   void refresh();
   function setSelectedConversation(conversationId) {
     selectedConversationId = conversationId;
