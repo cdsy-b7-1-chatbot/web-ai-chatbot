@@ -321,6 +321,39 @@ test("다른 대화방을 선택하면 이전 기록 응답을 무시한다", as
   );
 });
 
+test("기록 조회 중 보낸 질문의 응답은 늦은 기록 응답으로 덮어쓰지 않는다", async () => {
+  const chatDocument = createChatDocument();
+  globalThis.document = chatDocument;
+  let resolveHistory;
+  let resolveChat;
+  const historyRequest = new Promise((resolve) => { resolveHistory = resolve; });
+  const chatRequest = new Promise((resolve) => { resolveChat = resolve; });
+  const controller = initializeChat({
+    chatApi: {
+      getChatHistory: async () => historyRequest,
+      sendChat: async () => chatRequest,
+    },
+    getConversationId: () => 5,
+  });
+
+  const loadingHistory = controller.loadConversation(5);
+  chatDocument.elements["chat-question"].value = "새 질문";
+  const sendingQuestion = trigger(chatDocument.elements["chat-form"]);
+  resolveChat({ answer: "새 답변", conversation_id: 5, truncated: false });
+  await sendingQuestion;
+  assert.deepEqual(
+    chatDocument.elements["chat-messages"].children.map((bubble) => bubble.textContent),
+    ["새 질문", "새 답변"],
+  );
+
+  resolveHistory({ items: [{ id: 1, question: "이전 질문", answer: "이전 답변", status: "success", created_at: "2026-10-11T00:00:00Z" }] });
+  await loadingHistory;
+  assert.deepEqual(
+    chatDocument.elements["chat-messages"].children.map((bubble) => bubble.textContent),
+    ["새 질문", "새 답변"],
+  );
+});
+
 test("추가 기록은 offset으로 불러오고 중복 없이 시간순으로 표시한다", async () => {
   const chatDocument = createChatDocument();
   globalThis.document = chatDocument;

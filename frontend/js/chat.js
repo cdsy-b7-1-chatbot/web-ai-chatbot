@@ -36,7 +36,8 @@ export function initializeChat({
   }
 
   let requestPending = false;
-  let requestGeneration = 0;
+  let messageRequestGeneration = 0;
+  let historyRequestGeneration = 0;
   let historyItems = [];
   let historyOffset = 0;
   let historyPending = false;
@@ -50,6 +51,10 @@ export function initializeChat({
 
   function setMessagesBusy(isBusy) {
     messages.setAttribute("aria-busy", String(isBusy));
+  }
+
+  function updateMessagesBusy() {
+    setMessagesBusy(requestPending || historyPending);
   }
 
   function setHasMessages(hasMessages) {
@@ -82,7 +87,8 @@ export function initializeChat({
   }
 
   function reset() {
-    requestGeneration += 1;
+    messageRequestGeneration += 1;
+    historyRequestGeneration += 1;
     requestPending = false;
     historyItems = [];
     historyOffset = 0;
@@ -91,7 +97,7 @@ export function initializeChat({
     hasMoreHistory = false;
     messages.replaceChildren();
     setHasMessages(false);
-    setMessagesBusy(false);
+    updateMessagesBusy();
     loadMoreButton.hidden = true;
     questionInput.value = "";
     resizeQuestionInput();
@@ -141,9 +147,9 @@ export function initializeChat({
     }
 
     const conversationId = loadedConversationId;
-    const generation = ++requestGeneration;
+    const generation = ++historyRequestGeneration;
     historyPending = true;
-    setMessagesBusy(true);
+    updateMessagesBusy();
     if (resetHistory) {
       historyItems = [];
       historyOffset = 0;
@@ -159,7 +165,7 @@ export function initializeChat({
         limit: HISTORY_PAGE_SIZE,
         offset: historyOffset,
       });
-      if (generation !== requestGeneration || conversationId !== getConversationId()) {
+      if (generation !== historyRequestGeneration || conversationId !== getConversationId()) {
         return;
       }
       mergeHistoryItems(response.items);
@@ -169,16 +175,16 @@ export function initializeChat({
       loadMoreButton.hidden = !hasMoreHistory;
       setMessage(response.items.length === 0 ? "대화 기록이 없습니다." : "");
     } catch (error) {
-      if (generation !== requestGeneration) {
+      if (generation !== historyRequestGeneration) {
         return;
       }
       if (!onProtectedApiError(error)) {
         setMessage(getChatErrorMessage(error), "error");
       }
     } finally {
-      if (generation === requestGeneration) {
+      if (generation === historyRequestGeneration) {
         historyPending = false;
-        setMessagesBusy(false);
+        updateMessagesBusy();
         loadMoreButton.hidden = !hasMoreHistory;
       }
     }
@@ -186,9 +192,11 @@ export function initializeChat({
 
   async function loadConversation(conversationId) {
     // 같은 모듈 안의 이전 방 조회가 늦게 끝나도 새 선택을 덮어쓰지 못하게 한다.
-    requestGeneration += 1;
+    messageRequestGeneration += 1;
+    historyRequestGeneration += 1;
     historyPending = false;
     requestPending = false;
+    updateMessagesBusy();
     questionInput.disabled = false;
     submitButton.disabled = false;
     loadedConversationId = conversationId;
@@ -211,8 +219,8 @@ export function initializeChat({
     }
 
     requestPending = true;
-    const generation = requestGeneration;
-    setMessagesBusy(true);
+    const generation = messageRequestGeneration;
+    updateMessagesBusy();
     questionInput.disabled = true;
     submitButton.disabled = true;
     appendBubble("user", question);
@@ -221,15 +229,18 @@ export function initializeChat({
     setMessage("AI가 답변을 작성하고 있습니다.");
     try {
       const response = await chatApi.sendChat(question, getConversationId());
-      if (generation !== requestGeneration) {
+      if (generation !== messageRequestGeneration) {
         return;
       }
 
+      // 아직 도착하지 않은 기록 응답이 방금 표시한 질문·답변을 덮어쓰지 않게 한다.
+      historyRequestGeneration += 1;
+      historyPending = false;
       appendBubble("assistant", response.answer);
       setMessage(response.truncated ? "답변이 길이 제한으로 일부 잘렸습니다." : "");
       onChatSuccess(response);
     } catch (error) {
-      if (generation !== requestGeneration) {
+      if (generation !== messageRequestGeneration) {
         return;
       }
 
@@ -237,9 +248,9 @@ export function initializeChat({
         setMessage(getChatErrorMessage(error), "error");
       }
     } finally {
-      if (generation === requestGeneration) {
+      if (generation === messageRequestGeneration) {
         requestPending = false;
-        setMessagesBusy(false);
+        updateMessagesBusy();
         questionInput.disabled = false;
         submitButton.disabled = false;
       }
