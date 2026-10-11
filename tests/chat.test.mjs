@@ -9,6 +9,7 @@ class FakeElement {
     this.value = "";
     this.children = [];
     this.listeners = new Map();
+    this.attributes = new Map();
   }
 
   addEventListener(type, listener) {
@@ -23,6 +24,10 @@ class FakeElement {
 
   replaceChildren(...children) {
     this.children = children;
+  }
+
+  setAttribute(name, value) {
+    this.attributes.set(name, value);
   }
 
   focus() {
@@ -167,10 +172,12 @@ test("요청 중에는 중복 전송을 막고 로딩 상태를 표시한다", a
   const secondSubmit = trigger(chatDocument.elements["chat-form"]);
   assert.equal(calls, 1);
   assert.equal(chatDocument.elements["chat-submit"].disabled, true);
+  assert.equal(chatDocument.elements["chat-messages"].attributes.get("aria-busy"), "true");
   assert.equal(chatDocument.elements["chat-message"].textContent, "AI가 답변을 작성하고 있습니다.");
   resolveRequest({ answer: "완료", conversation_id: 1, truncated: true });
   await Promise.all([firstSubmit, secondSubmit]);
   assert.equal(chatDocument.elements["chat-message"].textContent, "답변이 길이 제한으로 일부 잘렸습니다.");
+  assert.equal(chatDocument.elements["chat-messages"].attributes.get("aria-busy"), "false");
 });
 
 test("새 대화·인증 해제 뒤에는 진행 중이던 응답을 표시하지 않는다", async () => {

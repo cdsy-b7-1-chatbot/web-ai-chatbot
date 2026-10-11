@@ -108,6 +108,19 @@ test("빈 목록·오류·재시도를 화면 상태로 전달한다", async () 
   assert.equal(elements["conversation-list"].children[0].textContent, "복구된 대화");
 });
 
+test("대화방 목록의 비동기 로딩 상태를 접근성 속성으로 전달한다", async () => {
+  const historyDocument = createHistoryDocument();
+  globalThis.document = historyDocument;
+  let resolveRequest;
+  const request = new Promise((resolve) => { resolveRequest = resolve; });
+  initializeHistory({ historyApi: { getConversations: async () => request } });
+
+  assert.equal(historyDocument.elements["conversation-list"].attributes.get("aria-busy"), "true");
+  resolveRequest({ items: [] });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(historyDocument.elements["conversation-list"].attributes.get("aria-busy"), "false");
+});
+
 test("실제 Mock API 새 대화는 목록 새로 고침으로 표시된다", async () => {
   const username = `h_${Date.now().toString().slice(-10)}`;
   await mockApi.signupMock(username, "password123");

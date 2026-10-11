@@ -45,6 +45,10 @@ export function initializeHistory({
     message.dataset.state = state;
   }
 
+  function setListBusy(isBusy) {
+    list.setAttribute("aria-busy", String(isBusy));
+  }
+
   function render() {
     list.replaceChildren();
     for (const conversation of conversations) {
@@ -63,6 +67,7 @@ export function initializeHistory({
 
   async function refresh() {
     const generation = ++requestGeneration;
+    setListBusy(true);
     setMessage("대화방을 불러오는 중입니다.");
     retryButton.hidden = true;
     try {
@@ -88,6 +93,10 @@ export function initializeHistory({
       render();
       setMessage(getHistoryErrorMessage(error), "error");
       retryButton.hidden = false;
+    } finally {
+      if (generation === requestGeneration) {
+        setListBusy(false);
+      }
     }
   }
 
@@ -96,6 +105,7 @@ export function initializeHistory({
     conversations = [];
     selectedConversationId = null;
     render();
+    setListBusy(false);
     setConversationPanelOpen(false);
     retryButton.hidden = true;
     setMessage("");

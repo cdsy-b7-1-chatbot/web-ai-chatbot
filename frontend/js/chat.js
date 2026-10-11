@@ -46,6 +46,10 @@ export function initializeChat({
     message.dataset.state = state;
   }
 
+  function setMessagesBusy(isBusy) {
+    messages.setAttribute("aria-busy", String(isBusy));
+  }
+
   function appendBubble(role, text) {
     const bubble = document.createElement("p");
     bubble.className = "chat-bubble";
@@ -63,6 +67,7 @@ export function initializeChat({
     loadedConversationId = null;
     hasMoreHistory = false;
     messages.replaceChildren();
+    setMessagesBusy(false);
     loadMoreButton.hidden = true;
     questionInput.value = "";
     questionInput.disabled = false;
@@ -112,6 +117,7 @@ export function initializeChat({
     const conversationId = loadedConversationId;
     const generation = ++requestGeneration;
     historyPending = true;
+    setMessagesBusy(true);
     if (resetHistory) {
       historyItems = [];
       historyOffset = 0;
@@ -145,6 +151,7 @@ export function initializeChat({
     } finally {
       if (generation === requestGeneration) {
         historyPending = false;
+        setMessagesBusy(false);
         loadMoreButton.hidden = !hasMoreHistory;
       }
     }
@@ -178,6 +185,7 @@ export function initializeChat({
 
     requestPending = true;
     const generation = requestGeneration;
+    setMessagesBusy(true);
     questionInput.disabled = true;
     submitButton.disabled = true;
     appendBubble("user", question);
@@ -203,6 +211,7 @@ export function initializeChat({
     } finally {
       if (generation === requestGeneration) {
         requestPending = false;
+        setMessagesBusy(false);
         questionInput.disabled = false;
         submitButton.disabled = false;
       }

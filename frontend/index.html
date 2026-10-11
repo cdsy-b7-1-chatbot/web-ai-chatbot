@@ -64,12 +64,12 @@
         <p class="description">질문을 입력하면 AI가 답변합니다.</p>
         <button id="conversation-toggle" class="conversation-toggle" type="button" aria-controls="conversation-panel" aria-expanded="false">대화방</button>
         <div id="chat-layout" class="chat-layout" data-conversations-open="false">
-          <aside id="conversation-panel" class="conversation-panel" aria-labelledby="conversation-title">
+          <nav id="conversation-panel" class="conversation-panel" aria-labelledby="conversation-title">
             <h3 id="conversation-title">대화방</h3>
             <div id="conversation-list" class="conversation-list" aria-live="polite"></div>
             <p id="conversation-message" class="conversation-message" role="status" aria-live="polite"></p>
             <button id="retry-conversations" type="button" hidden>다시 시도</button>
-          </aside>
+          </nav>
           <div class="chat-content">
             <button id="new-chat-button" type="button">새 대화</button>
             <div id="chat-messages" class="chat-messages" role="log" aria-live="polite" aria-label="대화 내용"></div>
