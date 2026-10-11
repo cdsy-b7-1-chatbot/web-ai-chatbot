@@ -60,7 +60,12 @@
 
       <section id="chat-screen" class="chat-app" aria-labelledby="chat-title" hidden>
         <header class="chat-header">
-          <p id="chat-title" class="chat-brand">AI Chatbot</p>
+          <div class="chat-header-brand">
+            <button id="conversation-toggle" class="conversation-toggle" type="button" aria-controls="conversation-panel" aria-expanded="false" aria-label="대화방 열기" title="대화방 열기">
+              <span class="panel-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+            </button>
+            <p id="chat-title" class="chat-brand">AI Chatbot</p>
+          </div>
           <div class="account-controls">
             <span class="current-user"><span id="current-username"></span>님</span>
             <button id="logout-button" type="button">로그아웃</button>
@@ -76,9 +81,6 @@
             <button id="retry-conversations" type="button" hidden>다시 시도</button>
           </nav>
           <div class="chat-content">
-            <div class="chat-content-topbar">
-              <button id="conversation-toggle" class="conversation-toggle" type="button" aria-controls="conversation-panel" aria-expanded="false">대화방</button>
-            </div>
             <div class="chat-stage">
               <div id="chat-empty-state" class="chat-empty-state">
                 <p class="eyebrow">ASK · UNDERSTAND · ORGANIZE</p>
@@ -98,10 +100,6 @@
         </div>
       </section>
 
-      <section class="status-card" aria-labelledby="status-title">
-        <h2 id="status-title">개발 환경 상태</h2>
-        <p id="api-status" role="status" aria-live="polite">Mock API를 확인하는 중입니다.</p>
-      </section>
     </main>
     <script type="module" src="/static/js/main.js"></script>
   </body>

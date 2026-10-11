@@ -41,7 +41,9 @@ export function initializeHistory({
       layout.dataset.sidebarToggled = "true";
     }
     toggleButton.setAttribute("aria-expanded", String(isOpen));
-    toggleButton.setAttribute("aria-label", isOpen ? "대화방 닫기" : "대화방 열기");
+    const label = isOpen ? "대화방 닫기" : "대화방 열기";
+    toggleButton.setAttribute("aria-label", label);
+    toggleButton.setAttribute("title", label);
   }
 
   function setMessage(text, state = "") {

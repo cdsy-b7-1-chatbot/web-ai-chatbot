@@ -24,7 +24,6 @@ function createMainDocument() {
     "chat-screen",
     "current-username",
     "retry-auth",
-    "api-status",
   ];
   const elements = Object.fromEntries(ids.map((id) => [id, new FakeElement()]));
   return {
@@ -58,10 +57,6 @@ function createDependencies(getCurrentUser) {
   return {
     dependencies: {
       authApi: { getCurrentUser, logout: async () => {} },
-      healthApi: {
-        getHealthStatus: async () => ({ status: "ok" }),
-        getHealthStatusSource: () => "Mock",
-      },
       initializeAuthFn: ({ onLoginSuccess, onLogout }) => {
         loginSuccessCallback = onLoginSuccess;
         logoutCallback = onLogout;

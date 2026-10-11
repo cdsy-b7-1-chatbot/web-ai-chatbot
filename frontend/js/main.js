@@ -1,5 +1,5 @@
 import { initializeAuth } from "./auth.js";
-import { getCurrentUser, getHealthStatus, getHealthStatusSource, logout } from "./api/api.js";
+import { getCurrentUser, logout } from "./api/api.js";
 import { ApiError } from "./api/errors.js";
 import { initializeChat } from "./chat.js";
 import { initializeHistory } from "./history.js";
@@ -24,7 +24,6 @@ function getAuthCheckErrorMessage(error) {
  */
 export async function initializeApplication({
   authApi = { getCurrentUser, logout },
-  healthApi = { getHealthStatus, getHealthStatusSource },
   initializeAuthFn = initializeAuth,
   initializeChatFn = initializeChat,
   initializeHistoryFn = initializeHistory,
@@ -36,7 +35,6 @@ export async function initializeApplication({
   const chatScreen = document.querySelector("#chat-screen");
   const usernameElement = document.querySelector("#current-username");
   const retryButton = document.querySelector("#retry-auth");
-  const healthStatusElement = document.querySelector("#api-status");
 
   if (
     !authScreen ||
@@ -159,17 +157,6 @@ export async function initializeApplication({
 
   initializeAuthFn({ onLoginSuccess: refreshAuthentication, onLogout: logoutCurrentUser });
   retryButton.addEventListener("click", refreshAuthentication);
-
-  if (healthStatusElement) {
-    void healthApi
-      .getHealthStatus()
-      .then((health) => {
-        healthStatusElement.textContent = `${healthApi.getHealthStatusSource()} API 연결: ${health.status}`;
-      })
-      .catch((error) => {
-        healthStatusElement.textContent = `API 상태를 확인하지 못했습니다: ${error.message}`;
-      });
-  }
 
   await refreshAuthentication();
   return { getAuthState: () => authState, refreshAuthentication, handleProtectedApiError };

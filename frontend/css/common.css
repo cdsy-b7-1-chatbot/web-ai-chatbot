@@ -91,7 +91,6 @@ h1 {
 
 .description { margin-bottom: 0; color: var(--muted); }
 
-.status-card,
 .auth-state-card {
   max-width: 23.75rem;
   margin: 1rem auto;
@@ -101,13 +100,10 @@ h1 {
   background: var(--surface);
 }
 
-.status-card h2,
 .auth-state-card h2 { margin-bottom: 0.35rem; font-size: 1rem; }
-.status-card p,
 .auth-state-card p { margin-bottom: 0; color: var(--muted); }
 
-body[data-auth-state="authenticated"] .intro,
-body[data-auth-state="authenticated"] .status-card { display: none; }
+body[data-auth-state="authenticated"] .intro { display: none; }
 
 @media (max-width: 40rem) {
   .app-shell { padding: 1rem; }
