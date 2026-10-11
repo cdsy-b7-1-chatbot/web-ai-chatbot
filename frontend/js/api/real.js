@@ -1,14 +1,63 @@
+import { ApiError } from "./errors.js";
+
 const HEALTH_ENDPOINT = "/api/health";
+const AUTH_ENDPOINT = "/api/auth";
+
+async function requestJson(endpoint, options = {}) {
+  const response = await fetch(endpoint, {
+    credentials: "same-origin",
+    ...options,
+  });
+
+  if (!response.ok) {
+    let error = null;
+    let message = `요청이 실패했습니다. (${response.status})`;
+
+    try {
+      const body = await response.json();
+      error = body.error ?? null;
+      message = body.message ?? message;
+    } catch {
+      // 오류 응답 본문이 JSON 이 아니어도 HTTP 상태는 호출자에게 전달한다.
+    }
+
+    throw new ApiError(response.status, error, message);
+  }
+
+  if (response.status === 204) {
+    return undefined;
+  }
+
+  return response.json();
+}
+
+function authRequestOptions(username, password) {
+  return {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
+  };
+}
 
 /**
  * 실제 API 응답을 공통 인터페이스로 전달해 화면 모듈이 통신 방식을 알 필요 없게 한다.
  */
 export async function getRealHealthStatus() {
-  const response = await fetch(HEALTH_ENDPOINT, { credentials: "same-origin" });
+  return requestJson(HEALTH_ENDPOINT);
+}
 
-  if (!response.ok) {
-    throw new Error(`상태 확인 요청이 실패했습니다. (${response.status})`);
-  }
+export async function signupReal(username, password) {
+  return requestJson(`${AUTH_ENDPOINT}/signup`, authRequestOptions(username, password));
+}
 
-  return response.json();
+export async function loginReal(username, password) {
+  await requestJson(`${AUTH_ENDPOINT}/login`, authRequestOptions(username, password));
+}
+
+export async function logoutReal() {
+  return requestJson(`${AUTH_ENDPOINT}/logout`, { method: "POST" });
+}
+
+export async function getRealCurrentUser() {
+  return requestJson(`${AUTH_ENDPOINT}/me`);
 }
