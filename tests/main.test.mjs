@@ -46,20 +46,25 @@ const { AUTH_STATES, initializeApplication } = await import("../frontend/js/main
 
 function createDependencies(getCurrentUser) {
   let loginSuccessCallback;
+  let logoutCallback;
   let chatStarts = 0;
   let historyStarts = 0;
   return {
     dependencies: {
-      authApi: { getCurrentUser },
+      authApi: { getCurrentUser, logout: async () => {} },
       healthApi: {
         getHealthStatus: async () => ({ status: "ok" }),
         getHealthStatusSource: () => "Mock",
       },
-      initializeAuthFn: ({ onLoginSuccess }) => { loginSuccessCallback = onLoginSuccess; },
+      initializeAuthFn: ({ onLoginSuccess, onLogout }) => {
+        loginSuccessCallback = onLoginSuccess;
+        logoutCallback = onLogout;
+      },
       initializeChatFn: () => { chatStarts += 1; },
       initializeHistoryFn: () => { historyStarts += 1; },
     },
     getLoginSuccessCallback: () => loginSuccessCallback,
+    getLogoutCallback: () => logoutCallback,
     getStarts: () => ({ chatStarts, historyStarts }),
   };
 }
@@ -77,6 +82,63 @@ test("초기 인증 성공 시 사용자 정보를 표시하고 채팅 영역만
   assert.equal(mainDocument.elements["auth-screen"].hidden, true);
   assert.equal(mainDocument.elements["auth-checking"].hidden, true);
   assert.deepEqual(setup.getStarts(), { chatStarts: 1, historyStarts: 1 });
+});
+
+test("로그아웃 성공은 사용자 정보와 인증 상태를 초기화한다", async () => {
+  const mainDocument = createMainDocument();
+  globalThis.document = mainDocument;
+  const setup = createDependencies(async () => ({ id: 5, username: "logout_user" }));
+  const application = await initializeApplication(setup.dependencies);
+
+  mainDocument.body.dataset.currentConversationId = "12";
+  await setup.getLogoutCallback()();
+  assert.equal(application.getAuthState(), AUTH_STATES.UNAUTHENTICATED);
+  assert.equal(mainDocument.elements["current-username"].textContent, "");
+  assert.equal(mainDocument.body.dataset.currentConversationId, "");
+  assert.equal(mainDocument.elements["auth-screen"].hidden, false);
+  assert.equal(mainDocument.elements["chat-screen"].hidden, true);
+});
+
+test("보호 API의 UNAUTHORIZED만 공통 인증 해제로 처리한다", async () => {
+  const mainDocument = createMainDocument();
+  globalThis.document = mainDocument;
+  const setup = createDependencies(async () => ({ id: 6, username: "protected_user" }));
+  const application = await initializeApplication(setup.dependencies);
+
+  assert.equal(application.handleProtectedApiError(new ApiError(401, "INVALID_CREDENTIALS", "실패")), false);
+  assert.equal(application.getAuthState(), AUTH_STATES.AUTHENTICATED);
+  assert.equal(application.handleProtectedApiError(new ApiError(401, "UNAUTHORIZED", "만료")), true);
+  assert.equal(application.getAuthState(), AUTH_STATES.UNAUTHENTICATED);
+});
+
+test("로그아웃 API 실패는 현재 인증 상태를 유지해 재시도할 수 있다", async () => {
+  const mainDocument = createMainDocument();
+  globalThis.document = mainDocument;
+  const setup = createDependencies(async () => ({ id: 7, username: "retry_logout" }));
+  setup.dependencies.authApi.logout = async () => {
+    throw new TypeError("Failed to fetch");
+  };
+  const application = await initializeApplication(setup.dependencies);
+
+  await assert.rejects(() => setup.getLogoutCallback()(), TypeError);
+  assert.equal(application.getAuthState(), AUTH_STATES.AUTHENTICATED);
+  assert.equal(mainDocument.elements["chat-screen"].hidden, false);
+});
+
+test("로그아웃은 진행 중인 이전 인증 확인 결과를 무효화한다", async () => {
+  const mainDocument = createMainDocument();
+  globalThis.document = mainDocument;
+  let resolveCurrentUser;
+  const setup = createDependencies(
+    () => new Promise((resolve) => { resolveCurrentUser = resolve; }),
+  );
+  const applicationPromise = initializeApplication(setup.dependencies);
+
+  await setup.getLogoutCallback()();
+  resolveCurrentUser({ id: 8, username: "stale_user" });
+  const application = await applicationPromise;
+  assert.equal(application.getAuthState(), AUTH_STATES.UNAUTHENTICATED);
+  assert.equal(mainDocument.elements["current-username"].textContent, "");
 });
 
 test("초기 401은 로그인 화면만 표시하고 채팅을 초기화하지 않는다", async () => {

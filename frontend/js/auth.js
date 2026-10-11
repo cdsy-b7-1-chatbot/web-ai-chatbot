@@ -36,7 +36,7 @@ export function getAuthErrorMessage(error) {
 /**
  * 인증 폼의 DOM과 로컬 요청 상태만 관리한다. 로그인 이후 화면 전환은 상위 모듈이 맡는다.
  */
-export function initializeAuth({ onLoginSuccess = () => {}, authApi = { signup, login } } = {}) {
+export function initializeAuth({ onLoginSuccess = () => {}, onLogout = () => {}, authApi = { signup, login } } = {}) {
   const loginForm = document.querySelector("#login-form");
   const signupForm = document.querySelector("#signup-form");
   const messageElement = document.querySelector("#auth-message");
@@ -48,6 +48,8 @@ export function initializeAuth({ onLoginSuccess = () => {}, authApi = { signup, 
   const loginButton = document.querySelector("#login-submit");
   const signupButton = document.querySelector("#signup-submit");
   const viewButtons = document.querySelectorAll("[data-auth-view]");
+  const logoutButton = document.querySelector("#logout-button");
+  const logoutMessage = document.querySelector("#logout-message");
 
   if (
     !loginForm ||
@@ -141,6 +143,27 @@ export function initializeAuth({ onLoginSuccess = () => {}, authApi = { signup, 
       loginButton.disabled = false;
     }
   });
+
+  if (logoutButton && logoutMessage) {
+    let logoutPending = false;
+    logoutButton.addEventListener("click", async () => {
+      if (logoutPending) {
+        return;
+      }
+
+      logoutPending = true;
+      logoutButton.disabled = true;
+      logoutMessage.textContent = "로그아웃 요청을 보내는 중입니다.";
+      try {
+        await onLogout();
+      } catch (error) {
+        logoutMessage.textContent = getAuthErrorMessage(error);
+      } finally {
+        logoutPending = false;
+        logoutButton.disabled = false;
+      }
+    });
+  }
 
   return { showLogin: () => showView("login"), showSignup: () => showView("signup") };
 }

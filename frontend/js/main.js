@@ -1,5 +1,5 @@
 import { initializeAuth } from "./auth.js";
-import { getCurrentUser, getHealthStatus, getHealthStatusSource } from "./api/api.js";
+import { getCurrentUser, getHealthStatus, getHealthStatusSource, logout } from "./api/api.js";
 import { ApiError } from "./api/errors.js";
 import { initializeChat } from "./chat.js";
 import { initializeHistory } from "./history.js";
@@ -23,7 +23,7 @@ function getAuthCheckErrorMessage(error) {
  * 서버의 현재 사용자 응답만으로 인증 상태를 정한다. 쿠키와 토큰 값은 화면 코드에서 다루지 않는다.
  */
 export async function initializeApplication({
-  authApi = { getCurrentUser },
+  authApi = { getCurrentUser, logout },
   healthApi = { getHealthStatus, getHealthStatusSource },
   initializeAuthFn = initializeAuth,
   initializeChatFn = initializeChat,
@@ -53,6 +53,7 @@ export async function initializeApplication({
   let authState = AUTH_STATES.CHECKING;
   let chatInitialized = false;
   let authenticationRequest = null;
+  let requestGeneration = 0;
 
   function renderAuthState(nextState, user = null, message = "") {
     authState = nextState;
@@ -64,6 +65,9 @@ export async function initializeApplication({
 
     if (nextState === AUTH_STATES.AUTHENTICATED) {
       usernameElement.textContent = user.username;
+    } else {
+      usernameElement.textContent = "";
+      document.body.dataset.currentConversationId = "";
     }
 
     if (nextState === AUTH_STATES.ERROR) {
@@ -76,10 +80,12 @@ export async function initializeApplication({
       return authenticationRequest;
     }
 
+    const generation = requestGeneration;
     renderAuthState(AUTH_STATES.CHECKING);
     authenticationRequest = authApi
       .getCurrentUser()
       .then((user) => {
+        if (generation !== requestGeneration) return;
         renderAuthState(AUTH_STATES.AUTHENTICATED, user);
         if (!chatInitialized) {
           initializeChatFn();
@@ -88,6 +94,7 @@ export async function initializeApplication({
         }
       })
       .catch((error) => {
+        if (generation !== requestGeneration) return;
         if (error instanceof ApiError && error.status === 401 && error.error === "UNAUTHORIZED") {
           renderAuthState(AUTH_STATES.UNAUTHENTICATED);
           return;
@@ -102,7 +109,25 @@ export async function initializeApplication({
     return authenticationRequest;
   }
 
-  initializeAuthFn({ onLoginSuccess: refreshAuthentication });
+  function handleProtectedApiError(error) {
+    if (error instanceof ApiError && error.status === 401 && error.error === "UNAUTHORIZED") {
+      requestGeneration += 1;
+      renderAuthState(AUTH_STATES.UNAUTHENTICATED);
+      return true;
+    }
+    return false;
+  }
+
+  async function logoutCurrentUser() {
+    requestGeneration += 1;
+    const generation = requestGeneration;
+    await authApi.logout();
+    if (generation === requestGeneration) {
+      renderAuthState(AUTH_STATES.UNAUTHENTICATED);
+    }
+  }
+
+  initializeAuthFn({ onLoginSuccess: refreshAuthentication, onLogout: logoutCurrentUser });
   retryButton.addEventListener("click", refreshAuthentication);
 
   if (healthStatusElement) {
@@ -117,7 +142,7 @@ export async function initializeApplication({
   }
 
   await refreshAuthentication();
-  return { getAuthState: () => authState, refreshAuthentication };
+  return { getAuthState: () => authState, refreshAuthentication, handleProtectedApiError };
 }
 
 if (typeof document !== "undefined") {
