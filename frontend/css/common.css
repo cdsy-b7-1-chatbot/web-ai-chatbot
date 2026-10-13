@@ -1,0 +1,112 @@
+:root {
+  color: #302c29;
+  background: #f8f6f2;
+  font-family: "Noto Sans KR", "Pretendard", system-ui, sans-serif;
+  font-synthesis: none;
+  --background: #f8f6f2;
+  --surface: #fffdf9;
+  --surface-subtle: #f4f1eb;
+  --sidebar: #eeeae3;
+  --text: #302c29;
+  --muted: #766e66;
+  --border: #e1d9cf;
+  --border-strong: #cec1b4;
+  --primary: #a06a51;
+  --primary-hover: #86543e;
+  --primary-soft: #f1e2d8;
+  --danger: #a5463e;
+  --success: #557353;
+  --shadow: 0 14px 34px rgb(75 55 40 / 6%);
+  --radius: 0.875rem;
+}
+
+* { box-sizing: border-box; }
+
+[hidden] { display: none !important; }
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background: var(--background);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+button,
+input,
+textarea { font: inherit; }
+
+button {
+  min-height: 2.625rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 0.625rem;
+  background: var(--primary);
+  color: #fffdf9;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+button:hover:not(:disabled) { background: var(--primary-hover); }
+button:disabled { cursor: not-allowed; opacity: 0.6; }
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgb(160 106 81 / 28%);
+  outline-offset: 2px;
+}
+
+h1,
+h2,
+h3,
+p { margin-top: 0; }
+
+.app-shell { min-height: 100vh; padding: clamp(1rem, 3vw, 2.5rem); }
+
+.intro {
+  max-width: 40rem;
+  margin: 0 auto 1.75rem;
+  text-align: center;
+}
+
+.eyebrow {
+  margin: 0 0 0.65rem;
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+h1 {
+  margin-bottom: 0.65rem;
+  font-family: Georgia, "Noto Serif KR", serif;
+  font-size: clamp(1.85rem, 4vw, 2.45rem);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.25;
+}
+
+.description { margin-bottom: 0; color: var(--muted); }
+
+.auth-state-card {
+  max-width: 23.75rem;
+  margin: 1rem auto;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.auth-state-card h2 { margin-bottom: 0.35rem; font-size: 1rem; }
+.auth-state-card p { margin-bottom: 0; color: var(--muted); }
+
+body[data-auth-state="authenticated"] .intro { display: none; }
+
+@media (max-width: 40rem) {
+  .app-shell { padding: 1rem; }
+  .intro { margin-top: 2rem; }
+  h1 { font-size: 1.55rem; letter-spacing: -0.055em; }
+}
