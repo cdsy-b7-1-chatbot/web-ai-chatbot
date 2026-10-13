@@ -62,6 +62,55 @@ def test_completed_log_records_error_status(client, caplog):
     assert "status=404" in completed
 
 
+def _records(caplog, name: str) -> list[logging.LogRecord]:
+    return [r for r in caplog.records if r.getMessage().startswith(f"{name} ")]
+
+
+def test_static_file_requests_are_hidden_at_info(client, caplog):
+    caplog.set_level(logging.INFO)
+
+    response = client.get("/static/css/common.css")
+
+    assert response.status_code == 200
+    assert response.headers["x-request-id"]  # 로그 레벨만 낮출 뿐 request_id 는 그대로 붙는다
+    assert _events(caplog, "request_received") == []
+    assert _events(caplog, "request_completed") == []
+
+
+def test_static_file_requests_are_logged_at_debug(client, caplog):
+    caplog.set_level(logging.DEBUG)
+
+    client.get("/static/css/common.css")
+
+    [received] = _records(caplog, "request_received")
+    [completed] = _records(caplog, "request_completed")
+    assert received.levelno == completed.levelno == logging.DEBUG
+    assert "path=/static/css/common.css" in received.getMessage()
+
+
+def test_failed_static_file_request_is_logged_at_info_with_path(client, caplog):
+    caplog.set_level(logging.INFO)
+
+    client.get("/static/js/missing.js")
+
+    assert _events(caplog, "request_received") == []
+    [completed] = _events(caplog, "request_completed")
+    assert "status=404" in completed
+    assert "path=/static/js/missing.js" in completed
+
+
+@pytest.mark.parametrize("path", ["/", "/api/health", "/staticfoo"])
+def test_other_requests_stay_at_info(client, caplog, path):
+    caplog.set_level(logging.INFO)
+
+    client.get(path)
+
+    [received] = _events(caplog, "request_received")
+    [completed] = _events(caplog, "request_completed")
+    assert f"path={path} " in f"{received} "
+    assert "path=" not in completed  # 일반 요청의 끝 로그 형식은 그대로
+
+
 @pytest.fixture
 def app_with_user():
     """토큰에서 user_id=7 을 꺼냈다고 가정한 앱 — 인증 기능이 붙은 뒤의 모습."""

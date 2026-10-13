@@ -7,6 +7,10 @@
 처리되지 않은 예외도 여기서 받아 `unhandled_error` 로그 + 500 응답으로 바꾼다.
 FastAPI 의 다른 오류 처리기(AppError·404·422)는 이 미들웨어 안쪽에서 먼저 처리되므로,
 여기까지 올라오는 예외는 정말로 아무도 처리하지 않은 것뿐이다.
+
+`debug_path_prefixes` 로 시작하는 경로(예: 화면의 정적 파일 `/static/`)는 화면을 한 번 열 때
+수십 줄씩 쌓이므로 시작·끝 로그를 DEBUG 로 남긴다(`LOG_LEVEL=DEBUG` 일 때만 보인다).
+실패(4xx·5xx)하면 끝 로그를 INFO 로 올리고, 시작 로그가 안 보이니 경로도 함께 남긴다.
 """
 
 import logging
@@ -35,11 +39,18 @@ def _no_user(_: HTTPConnection) -> int | None:
 class RequestContextMiddleware:
     """`resolve_user_id` 는 요청의 토큰에서 user_id 를 꺼내는 함수(비로그인이면 None).
     인증 기능이 이 모듈을 import 하지 않도록, 함수를 밖에서 넘겨받는다.
+    `debug_path_prefixes` 도 같은 이유로 밖에서 받는다 — 정적 파일 위치는 main.py 가 정한다.
     """
 
-    def __init__(self, app: ASGIApp, resolve_user_id: UserIdResolver = _no_user) -> None:
+    def __init__(
+        self,
+        app: ASGIApp,
+        resolve_user_id: UserIdResolver = _no_user,
+        debug_path_prefixes: tuple[str, ...] = (),
+    ) -> None:
         self.app = app
         self.resolve_user_id = resolve_user_id
+        self.debug_path_prefixes = debug_path_prefixes
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
@@ -51,7 +62,15 @@ class RequestContextMiddleware:
         # 요청이 끝나도 되돌리지 않는다 — 요청마다 별도 실행 흐름이라 다른 요청에 새지 않는다.
         request_id_var.set(request_id)
         user_id_var.set(self.resolve_user_id(HTTPConnection(scope)))
-        log_event(logger, "request_received", method=scope["method"], path=scope["path"])
+        path = scope["path"]
+        quiet = path.startswith(self.debug_path_prefixes)
+        log_event(
+            logger,
+            "request_received",
+            logging.DEBUG if quiet else logging.INFO,
+            method=scope["method"],
+            path=path,
+        )
 
         started = time.perf_counter()
         status = 500
@@ -80,4 +99,14 @@ class RequestContextMiddleware:
             await internal_error_response()(scope, receive, send_with_request_id)
         finally:
             duration_ms = round((time.perf_counter() - started) * 1000)
-            log_event(logger, "request_completed", status=status, duration_ms=duration_ms)
+            failed = status >= 400
+            # 조용한 경로가 실패하면 시작 로그(DEBUG)가 안 보이므로 경로를 끝 로그에 같이 남긴다
+            extra = {"path": path} if quiet and failed else {}
+            log_event(
+                logger,
+                "request_completed",
+                logging.DEBUG if quiet and not failed else logging.INFO,
+                status=status,
+                duration_ms=duration_ms,
+                **extra,
+            )
