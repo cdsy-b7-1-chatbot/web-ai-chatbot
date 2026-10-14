@@ -30,6 +30,7 @@ Codyssey B7-1 팀 프로젝트입니다. FastAPI 웹 서비스에서 회원 인�
 
 - API 명세·요청/응답 예시: 실행한 서버의 `/docs` (로컬 http://127.0.0.1:8000/docs)
 - ERD·인증·repository 설계: [이슈 #1](https://github.com/cdsy-b7-1-chatbot/web-ai-chatbot/issues/1), 테이블 정의 `app/db/models/`
+- 백엔드 A DB·인증·공통 기반 설계와 검증 방법: [DB·인증 기술 문서](docs/auth.md)
 - 백엔드 B 구현·검증 방법: [채팅 기술 문서](docs/chat.md)
 - 내 전체·대화방별 기록 조회 및 프론트 연결: [기록 조회 API](docs/history.md)
 - 사용자별 DB 확인: [확인용 SQL](scripts/check_chat_logs.sql)
@@ -85,6 +86,10 @@ Python 버전과 패키지 버전은 [uv](https://docs.astral.sh/uv/) 로 맞춥
 ## PM 기록 조회 작업 요약
 
 이동현: 이슈 #1·#11의 분담에 따라 내 전체·선택한 대화방의 기록 조회 API를 구현했습니다. 기존 인증·ORM 모델을 사용하며 사용자 범위, 대화방 소유권, 실패 이력, 최신순 정렬과 페이지 처리를 적용했습니다. 조회에는 AI 키가 필요하지 않습니다. 관련 자동 테스트와 프론트 연결 명세는 [기록 조회 문서](docs/history.md)에 정리했습니다.
+
+## 백엔드 A 작업 요약
+
+이상우: 이슈 #1·#2에 따라 공통 기반과 DB·인증을 구현했습니다. 공통 기반은 `{error, message}` 오류 형식과 전역 예외 처리, 요청마다 `request_id`가 붙는 서버 로그, `/docs` API 명세, uv 기반 맥·Windows 개발 환경입니다(#4). DB는 users·conversations·chats 테이블 모델과 PostgreSQL 연결·세션을 만들었습니다(#6). 인증은 Argon2id 비밀번호 해시와 JWT HttpOnly 쿠키로 회원가입·로그인·로그아웃·로그인 사용자 확인(`CurrentUser`)을 구현하고, 요청 로그에 로그인 사용자의 `user_id`를 남기게 했습니다(#7). 이후 화면 정적 파일 요청 로그를 DEBUG로 낮췄습니다(#28). 팀 협업 가이드와 이슈·PR 템플릿을 작성했고(#5), B·PM·FE의 PR(#12·#15·#26)이 테이블·세션·인증 의존성을 계약대로 쓰는지 확인했습니다. 설계 결정과 검증 방법은 [DB·인증 기술 문서](docs/auth.md)에 정리했습니다.
 
 ## 백엔드 B 작업 요약
 
