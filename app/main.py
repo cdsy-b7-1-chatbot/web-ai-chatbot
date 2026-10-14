@@ -23,6 +23,7 @@ from app.db.database import get_engine, init_db
 from app.history.router import router as history_router
 
 FRONTEND_DIRECTORY = Path(__file__).resolve().parent.parent / "frontend"
+STATIC_PATH = "/static"
 
 
 @asynccontextmanager
@@ -45,8 +46,12 @@ def create_app() -> FastAPI:
     setup_logging(settings.log_level)
 
     app = FastAPI(title="Web AI Chatbot", lifespan=lifespan, **app_openapi_options())
-    # 요청 로그마다 토큰 주인의 user_id 를 붙인다(비로그인은 -)
-    app.add_middleware(RequestContextMiddleware, resolve_user_id=user_id_from_request)
+    # 요청 로그마다 토큰 주인의 user_id 를 붙인다(비로그인은 -). 정적 파일 요청 로그는 DEBUG 로
+    app.add_middleware(
+        RequestContextMiddleware,
+        resolve_user_id=user_id_from_request,
+        debug_path_prefixes=(f"{STATIC_PATH}/",),
+    )
     if settings.cors_origin_list:
         # 프론트를 다른 주소에 따로 배포했을 때만. 그때 토큰은 Authorization 헤더로 오므로 쿠키는 허용하지 않는다.
         # 나중에 추가한 미들웨어가 바깥쪽이라, 500 응답에도 CORS 헤더가 붙어 프론트가 오류를 읽을 수 있다
@@ -61,7 +66,7 @@ def create_app() -> FastAPI:
     use_error_response_for_validation(app)
 
     # API와 같은 출처에서 화면을 제공해 인증 쿠키를 별도 설정 없이 보낼 수 있게 한다.
-    app.mount("/static", StaticFiles(directory=FRONTEND_DIRECTORY), name="static")
+    app.mount(STATIC_PATH, StaticFiles(directory=FRONTEND_DIRECTORY), name="static")
 
     @app.get("/", include_in_schema=False)
     def frontend() -> FileResponse:
