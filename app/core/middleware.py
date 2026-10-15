@@ -8,8 +8,9 @@
 FastAPI 의 다른 오류 처리기(AppError·404·422)는 이 미들웨어 안쪽에서 먼저 처리되므로,
 여기까지 올라오는 예외는 정말로 아무도 처리하지 않은 것뿐이다.
 
-`debug_path_prefixes` 로 시작하는 경로(예: 화면의 정적 파일 `/static/`)는 화면을 한 번 열 때
-수십 줄씩 쌓이므로 시작·끝 로그를 DEBUG 로 남긴다(`LOG_LEVEL=DEBUG` 일 때만 보인다).
+`debug_path_prefixes` 로 시작하는 경로는 시작·끝 로그를 DEBUG 로 남긴다(`LOG_LEVEL=DEBUG` 일 때만 보인다).
+화면의 정적 파일(`/static/`)은 화면을 한 번 열 때 수십 줄씩, 배포 헬스 체크(`/api/health`)는
+몇 초마다 쌓여 다른 요청 로그를 묻기 때문이다.
 실패(4xx·5xx)하면 끝 로그를 INFO 로 올리고, 시작 로그가 안 보이니 경로도 함께 남긴다.
 """
 
@@ -39,7 +40,7 @@ def _no_user(_: HTTPConnection) -> int | None:
 class RequestContextMiddleware:
     """`resolve_user_id` 는 요청의 토큰에서 user_id 를 꺼내는 함수(비로그인이면 None).
     인증 기능이 이 모듈을 import 하지 않도록, 함수를 밖에서 넘겨받는다.
-    `debug_path_prefixes` 도 같은 이유로 밖에서 받는다 — 정적 파일 위치는 main.py 가 정한다.
+    `debug_path_prefixes` 도 같은 이유로 밖에서 받는다 — 정적 파일·헬스 체크 경로는 main.py 가 정한다.
     """
 
     def __init__(

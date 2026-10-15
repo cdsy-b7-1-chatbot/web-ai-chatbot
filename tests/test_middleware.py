@@ -41,14 +41,14 @@ def test_each_request_gets_a_new_request_id(client):
 def test_logs_start_and_end_with_same_request_id(client, caplog):
     caplog.set_level(logging.INFO)
 
-    response = client.get("/api/health")
+    response = client.get("/")
 
     [received] = _events(caplog, "request_received")
     [completed] = _events(caplog, "request_completed")
     request_id = response.headers["x-request-id"]
     assert _field(received, "request_id") == request_id
     assert _field(completed, "request_id") == request_id
-    assert "method=GET path=/api/health" in received
+    assert "method=GET path=/ " in f"{received} "
     assert "status=200" in completed
     assert re.search(r"duration_ms=\d+", completed)
 
@@ -66,10 +66,14 @@ def _records(caplog, name: str) -> list[logging.LogRecord]:
     return [r for r in caplog.records if r.getMessage().startswith(f"{name} ")]
 
 
-def test_static_file_requests_are_hidden_at_info(client, caplog):
+QUIET_PATHS = ["/static/css/common.css", "/api/health"]
+
+
+@pytest.mark.parametrize("path", QUIET_PATHS)
+def test_quiet_path_requests_are_hidden_at_info(client, caplog, path):
     caplog.set_level(logging.INFO)
 
-    response = client.get("/static/css/common.css")
+    response = client.get(path)
 
     assert response.status_code == 200
     assert response.headers["x-request-id"]  # 로그 레벨만 낮출 뿐 request_id 는 그대로 붙는다
@@ -77,15 +81,16 @@ def test_static_file_requests_are_hidden_at_info(client, caplog):
     assert _events(caplog, "request_completed") == []
 
 
-def test_static_file_requests_are_logged_at_debug(client, caplog):
+@pytest.mark.parametrize("path", QUIET_PATHS)
+def test_quiet_path_requests_are_logged_at_debug(client, caplog, path):
     caplog.set_level(logging.DEBUG)
 
-    client.get("/static/css/common.css")
+    client.get(path)
 
     [received] = _records(caplog, "request_received")
     [completed] = _records(caplog, "request_completed")
     assert received.levelno == completed.levelno == logging.DEBUG
-    assert "path=/static/css/common.css" in received.getMessage()
+    assert f"path={path}" in received.getMessage()
 
 
 def test_failed_static_file_request_is_logged_at_info_with_path(client, caplog):
@@ -99,7 +104,7 @@ def test_failed_static_file_request_is_logged_at_info_with_path(client, caplog):
     assert "path=/static/js/missing.js" in completed
 
 
-@pytest.mark.parametrize("path", ["/", "/api/health", "/staticfoo"])
+@pytest.mark.parametrize("path", ["/", "/api/auth/me", "/staticfoo"])
 def test_other_requests_stay_at_info(client, caplog, path):
     caplog.set_level(logging.INFO)
 
