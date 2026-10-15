@@ -120,6 +120,8 @@ export async function initializeApplication({
             onProtectedApiError: handleProtectedApiError,
           });
           chatInitialized = true;
+        } else {
+          void historyController?.refresh();
         }
       })
       .catch((error) => {
