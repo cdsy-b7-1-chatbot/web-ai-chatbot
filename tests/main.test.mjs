@@ -7,6 +7,8 @@ class FakeElement {
     this.dataset = {};
     this.textContent = "";
     this.listeners = new Map();
+    this.children = [];
+    this.attributes = new Map();
   }
 
   addEventListener(type, listener) {
@@ -14,6 +16,12 @@ class FakeElement {
     listeners.push(listener);
     this.listeners.set(type, listeners);
   }
+
+  append(child) { this.children.push(child); }
+
+  replaceChildren(...children) { this.children = children; }
+
+  setAttribute(name, value) { this.attributes.set(name, value); }
 }
 
 function createMainDocument() {
@@ -27,6 +35,9 @@ function createMainDocument() {
     "current-username",
     "logout-message",
     "retry-auth",
+    "conversation-list",
+    "conversation-message",
+    "retry-conversations",
   ];
   const elements = Object.fromEntries(ids.map((id) => [id, new FakeElement()]));
   return {
@@ -34,6 +45,7 @@ function createMainDocument() {
     querySelector(selector) {
       return elements[selector.slice(1)] ?? null;
     },
+    createElement() { return new FakeElement(); },
     elements,
   };
 }
@@ -45,6 +57,7 @@ async function trigger(element, type) {
 delete globalThis.document;
 const { ApiError } = await import("../frontend/js/api/errors.js");
 const { AUTH_STATES, initializeApplication } = await import("../frontend/js/main.js");
+const { initializeHistory } = await import("../frontend/js/history.js");
 
 function createDependencies(getCurrentUser) {
   let loginSuccessCallback;
@@ -121,6 +134,44 @@ test("로그아웃 성공은 사용자 정보와 인증 상태를 초기화한�
   assert.equal(mainDocument.elements["chat-screen"].hidden, true);
   assert.equal(setup.getStarts().chatResets, 1);
 });
+
+for (const nextUserId of [1, 2]) {
+  test(`${nextUserId === 1 ? "같은 사용자 재로그인" : "다른 사용자 로그인"} 시 대화방 목록을 다시 조회한다`, async () => {
+    const mainDocument = createMainDocument();
+    globalThis.document = mainDocument;
+    let currentUserId = 1;
+    let historyStarts = 0;
+    const roomListUsers = [];
+    const setup = createDependencies(async () => ({ id: currentUserId, username: `user_${currentUserId}` }));
+    setup.dependencies.initializeHistoryFn = (options) => {
+      historyStarts += 1;
+      return initializeHistory({
+        ...options,
+        historyApi: {
+          getConversations: async () => {
+            roomListUsers.push(currentUserId);
+            return { items: [{ id: currentUserId, title: `사용자 ${currentUserId}의 대화` }] };
+          },
+        },
+      });
+    };
+    const application = await initializeApplication(setup.dependencies);
+    const roomTitles = () => mainDocument.elements["conversation-list"].children.map((button) => button.textContent);
+    assert.deepEqual(roomTitles(), ["사용자 1의 대화"]);
+
+    await setup.getLogoutCallback()();
+    assert.deepEqual(roomTitles(), []);
+    currentUserId = nextUserId;
+    await setup.getLoginSuccessCallback()();
+
+    assert.equal(application.getAuthState(), AUTH_STATES.AUTHENTICATED);
+    assert.deepEqual(roomTitles(), [`사용자 ${nextUserId}의 대화`]);
+    assert.deepEqual(roomListUsers, [1, nextUserId]);
+    assert.equal(mainDocument.body.dataset.currentConversationId, "");
+    assert.equal(historyStarts, 1);
+    assert.equal(setup.getStarts().chatStarts, 1);
+  });
+}
 
 test("재로그인 시 이전 로그아웃 진행 메시지를 지운다", async () => {
   const mainDocument = createMainDocument();
