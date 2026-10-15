@@ -7,14 +7,14 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.chat.client import OpenRouterClient, get_ai_client
+from app.chat.client import CodysseyClient, get_ai_client
 from app.core.config import get_settings
 from app.db.models import Chat, Conversation
 
 
 def install_ai(client, configure, handler):
-    configure(openrouter_api_key="test-only-private-key")
-    ai = OpenRouterClient(get_settings(), transport=httpx.MockTransport(handler))
+    configure(codyssey_api_key="test-only-private-key")
+    ai = CodysseyClient(get_settings(), transport=httpx.MockTransport(handler))
     client.app.dependency_overrides[get_ai_client] = lambda: ai
 
 
@@ -22,7 +22,7 @@ def completion(answer="private-answer", reason="stop"):
     return httpx.Response(
         200,
         json={
-            "model": "qwen/qwen3-30b-a3b-instruct-2507",
+            "model": "gpt-5-mini",
             "choices": [{"message": {"content": answer}, "finish_reason": reason}],
             "usage": {"prompt_tokens": 10, "completion_tokens": 20},
         },
@@ -40,7 +40,8 @@ def test_success_pipeline_shares_request_id_and_never_logs_secrets(
 
     def handler(request):
         payload = json.loads(request.content)
-        assert payload["provider"] == {"only": ["streamlake"], "allow_fallbacks": False}
+        assert "provider" not in payload
+        assert payload["max_tokens"] == 1024
         return completion(reason="length")
 
     install_ai(client, configure, handler)
