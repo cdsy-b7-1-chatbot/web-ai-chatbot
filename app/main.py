@@ -24,6 +24,7 @@ from app.history.router import router as history_router
 
 FRONTEND_DIRECTORY = Path(__file__).resolve().parent.parent / "frontend"
 STATIC_PATH = "/static"
+HEALTH_PATH = "/api/health"
 
 
 @asynccontextmanager
@@ -46,11 +47,12 @@ def create_app() -> FastAPI:
     setup_logging(settings.log_level)
 
     app = FastAPI(title="Web AI Chatbot", lifespan=lifespan, **app_openapi_options())
-    # 요청 로그마다 토큰 주인의 user_id 를 붙인다(비로그인은 -). 정적 파일 요청 로그는 DEBUG 로
+    # 요청 로그마다 토큰 주인의 user_id 를 붙인다(비로그인은 -).
+    # 정적 파일과 배포 헬스 체크(Render 가 5초마다 요청) 요청 로그는 DEBUG 로
     app.add_middleware(
         RequestContextMiddleware,
         resolve_user_id=user_id_from_request,
-        debug_path_prefixes=(f"{STATIC_PATH}/",),
+        debug_path_prefixes=(f"{STATIC_PATH}/", HEALTH_PATH),
     )
     if settings.cors_origin_list:
         # 프론트를 다른 주소에 따로 배포했을 때만. 그때 토큰은 Authorization 헤더로 오므로 쿠키는 허용하지 않는다.
@@ -73,7 +75,7 @@ def create_app() -> FastAPI:
         """브라우저 진입점은 API 문서와 분리해 정적 HTML로 제공한다."""
         return FileResponse(FRONTEND_DIRECTORY / "index.html")
 
-    @app.get("/api/health")
+    @app.get(HEALTH_PATH)
     def health() -> HealthResponse:
         """서버가 떠 있는지 확인(배포 헬스 체크용)."""
         return HealthResponse(status="ok")
