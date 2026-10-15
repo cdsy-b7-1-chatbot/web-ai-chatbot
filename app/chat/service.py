@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
 from app.chat import repository
-from app.chat.client import AIClientError, AIResult, OpenRouterClient
+from app.chat.client import AIClientError, AIResult, CodysseyClient
 from app.chat.context import Message, build_messages
 from app.chat.schemas import ChatResponse, ConversationListResponse, ConversationResponse
 from app.core.config import get_settings
@@ -115,7 +115,7 @@ async def send_message(
     user_id: int,
     question: str,
     conversation_id: int | None,
-    ai_client: OpenRouterClient,
+    ai_client: CodysseyClient,
 ) -> ChatResponse:
     try:
         ai_client.ensure_configured()

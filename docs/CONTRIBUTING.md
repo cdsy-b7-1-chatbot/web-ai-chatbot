@@ -41,6 +41,7 @@ feature/ai-chat ──PR──┘   (기능이 하나씩 쌓임)                
 | `app/db/` | DB 연결(`database.py` — `SessionDep`)·테이블 모델(`models/`) | 백엔드 A |
 | `app/auth/` | 회원가입·로그인·로그아웃, 로그인 사용자 확인(`dependencies.py` — `CurrentUser`·`OptionalUser`) | 백엔드 A |
 | `app/chat/` | 채팅·대화방 목록 API, 대화 repository, AI 호출·문맥·오류·로그 | 백엔드 B |
+| `app/history/` | 내 전체·대화방별 기록 조회 API, 사용자 범위·페이지 처리 | PM |
 | `tests/` | 테스트 — `tests/test_<모듈>.py` | 각 담당 |
 | `docs/` | 협업·기술 문서 | 전원 |
 

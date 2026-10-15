@@ -2,7 +2,7 @@
 
 Codyssey B7-1 팀 프로젝트입니다. FastAPI 웹 서비스에서 회원 인증, AI 질문·응답, 사용자별 대화 기록을 구현하고 외부 URL로 배포합니다.
 
-회원가입·로그인, 인증된 사용자용 채팅 API와 대화방 목록 API가 구현되어 있습니다. 웹 화면·내 기록 API·배포는 각 담당자의 PR에서 통합합니다.
+회원가입·로그인, 인증된 사용자용 채팅·대화방 목록·내 기록 조회 API와 웹 화면이 통합되어 있습니다. 배포 환경 연결과 외부 URL 검증을 진행합니다.
 
 범용 챗봇으로 사용자가 질문하고 같은 대화방에서 후속 질문을 이어갈 수 있습니다. 핵심 흐름은 가입 → 로그인 → 질문 → 최근 대화 문맥으로 AI 응답 → DB 저장 → 응답 확인입니다.
 
@@ -10,7 +10,7 @@ Codyssey B7-1 팀 프로젝트입니다. FastAPI 웹 서비스에서 회원 인�
 
 | 이름 | 역할 | 주 담당 |
 | --- | --- | --- |
-| 이동현 | PM | 이슈·PR·일정 관리, 통합 검증, 배포 조율, 제출 문서 |
+| 이동현 | PM | 내 기록 조회 API, 이슈·PR·일정 관리, 통합 검증, 배포 조율, 제출 문서 |
 | 이상우 | 백엔드 A | ERD·DB 연결·테이블, 회원가입·로그인·인증 |
 | 권현석 | 백엔드 B | 대화방·대화 repository, 채팅·대화방 목록 API, AI 호출·문맥·오류·로그·테스트 |
 | 우광택 | 프론트엔드 | 가입·로그인·채팅·기록 화면과 API 연결 |
@@ -26,13 +26,15 @@ Codyssey B7-1 팀 프로젝트입니다. FastAPI 웹 서비스에서 회원 인�
 
 ## 구조·문서
 
-`app/auth/`의 인증 → `app/chat/router.py`의 HTTP 입출력 → `service.py`의 문맥·AI·저장 흐름 → `repository.py` → PostgreSQL로 연결됩니다. AI 호출은 서버의 `client.py`에서 OpenRouter로 전송합니다.
+`app/auth/`의 인증 → `app/chat/router.py`의 HTTP 입출력 → `service.py`의 문맥·AI·저장 흐름 → `repository.py` → PostgreSQL로 연결됩니다. AI 호출은 서버의 `client.py`에서 코디세이 OpenAI 호환 API로 전송합니다.
 
 - API 명세·요청/응답 예시: 실행한 서버의 `/docs` (로컬 http://127.0.0.1:8000/docs)
 - ERD·인증·repository 설계: [이슈 #1](https://github.com/cdsy-b7-1-chatbot/web-ai-chatbot/issues/1), 테이블 정의 `app/db/models/`
+- 백엔드 A DB·인증·공통 기반 설계와 검증 방법: [DB·인증 기술 문서](docs/auth.md)
 - 백엔드 B 구현·검증 방법: [채팅 기술 문서](docs/chat.md)
+- 내 전체·대화방별 기록 조회 및 프론트 연결: [기록 조회 API](docs/history.md)
 - 사용자별 DB 확인: [확인용 SQL](scripts/check_chat_logs.sql)
-- `list_chats`와 `GET /api/me/chats`, 배포 URL·최종 팀 작업 요약 취합: PM 담당
+- `app/history/`의 `list_chats`와 `GET /api/me/chats`, 배포 URL·최종 팀 작업 요약 취합: PM 담당
 
 ## 로컬 개발 환경 (맥·Windows 공통)
 
@@ -65,22 +67,30 @@ Python 버전과 패키지 버전은 [uv](https://docs.astral.sh/uv/) 로 맞춥
 
 | 이름 | 설명 | 기본값 |
 |---|---|---|
-| `LOG_LEVEL` | 서버 로그 레벨 (`DEBUG` / `INFO` / `WARNING` / `ERROR`) | `INFO` |
+| `LOG_LEVEL` | 서버 로그 레벨 (`DEBUG` / `INFO` / `WARNING` / `ERROR`). 화면 정적 파일(`/static/`) 요청 로그는 `DEBUG` 에서만 보인다(실패는 `INFO`) | `INFO` |
 | `DATABASE_URL` | Postgres 주소. 로컬은 Docker Postgres(`.env.example` 값) 또는 개인 Render Postgres, 배포는 Render Postgres | 없음 — 비어 있으면 서버가 시작하지 않음 |
 | `JWT_SECRET` | 로그인 토큰 서명 키(32바이트 이상). 배포에는 `uv run python -c "import secrets; print(secrets.token_urlsafe(32))"` 로 새로 만든 값을 넣는다. 바꾸면 기존 토큰이 전부 무효가 된다 | 없음 — 비어 있거나 짧으면 서버가 시작하지 않음 |
 | `JWT_EXPIRE_MINUTES` | 로그인 유지 시간(분). 지나면 401 → 다시 로그인 | `60` |
 | `COOKIE_SECURE` | 로그인 쿠키를 https 로만 보내게 할지. 로컬 http 개발에서만 `false` | `true` |
 | `CORS_ORIGINS` | 프론트를 다른 주소에 따로 배포할 때 그 주소. 여러 개는 쉼표로 | 없음 — 같은 주소에서만 호출 가능 |
 | `TEST_DATABASE_URL` | 테스트 전용. 주면 테스트를 이 Postgres 로 돌린다. `.env` 에서는 읽지 않으니 명령 앞에 붙인다. 테스트가 테이블을 지우므로 DB 이름에 `test` 가 들어가야 한다 | 없음 — 메모리 SQLite |
-| `OPENROUTER_API_KEY` | 서버의 OpenRouter 인증 키. 미설정 시 채팅 요청에 503을 반환한다 | 없음 |
-| `AI_MODEL` | OpenRouter 모델 ID. StreamLake 제공자만 사용하며 다른 제공자로 fallback하지 않는다 | `qwen/qwen3-30b-a3b-instruct-2507` |
+| `CODYSSEY_API_KEY` | 코디세이 콘솔에서 발급한 OpenAI 호환 키. 서버에만 설정하며 미설정 시 채팅 요청에 503을 반환한다 | 없음 |
+| `AI_MODEL` | 코디세이 콘솔의 사용 가능한 채팅 모델 ID | `gpt-5-mini` |
 | `AI_TIMEOUT_SECONDS` | AI 호출 전체 제한 시간(초), 앱의 자동 재시도 없음 | `30` |
 | `AI_MAX_OUTPUT_TOKENS` | 답변의 최대 생성 토큰 수 | `1024` |
 | `CHAT_CONTEXT_PAIRS` | 같은 방에서 문맥에 포함할 최근 성공 질문·답변 쌍 수 | `5` |
 | `CHAT_MAX_QUESTION_LENGTH` | 앞뒤 공백 제거 후 질문의 최대 글자 수 | `5000` |
-| `OPENROUTER_SITE_URL` | 선택 헤더 `HTTP-Referer`. 비어 있으면 생략 | 없음 |
-| `OPENROUTER_SITE_NAME` | 선택 헤더 `X-OpenRouter-Title`. 비어 있으면 생략 | 없음 |
+
+코디세이 콘솔의 **OpenAI** 호환 방식으로 키를 발급해 `CODYSSEY_API_KEY`에 넣습니다. 서버는 `https://copa.codyssey.kr/v1/chat/completions`를 호출합니다. 기존 OpenRouter 키와 선택 헤더는 사용하지 않습니다. 모델 가용 여부와 잔여 할당량은 코디세이 콘솔에서 확인합니다.
+
+## PM 기록 조회 작업 요약
+
+이동현: 이슈 #1·#11의 분담에 따라 내 전체·선택한 대화방의 기록 조회 API를 구현했습니다. 기존 인증·ORM 모델을 사용하며 사용자 범위, 대화방 소유권, 실패 이력, 최신순 정렬과 페이지 처리를 적용했습니다. 조회에는 AI 키가 필요하지 않습니다. 배포용 AI 호출을 코디세이 OpenAI 호환 API로 전환하고 관련 설정과 테스트를 맞췄습니다. 관련 자동 테스트와 프론트 연결 명세는 [기록 조회 문서](docs/history.md)에 정리했습니다.
+
+## 백엔드 A 작업 요약
+
+이상우: 이슈 #1·#2에 따라 공통 기반과 DB·인증을 구현했습니다. 공통 기반은 `{error, message}` 오류 형식과 전역 예외 처리, 요청마다 `request_id`가 붙는 서버 로그, `/docs` API 명세, uv 기반 맥·Windows 개발 환경입니다(#4). DB는 users·conversations·chats 테이블 모델과 PostgreSQL 연결·세션을 만들었습니다(#6). 인증은 Argon2id 비밀번호 해시와 JWT HttpOnly 쿠키로 회원가입·로그인·로그아웃·로그인 사용자 확인(`CurrentUser`)을 구현하고, 요청 로그에 로그인 사용자의 `user_id`를 남기게 했습니다(#7). 이후 화면 정적 파일 요청 로그를 DEBUG로 낮췄습니다(#28). 팀 협업 가이드와 이슈·PR 템플릿을 작성했고(#5), B·PM·FE의 PR(#12·#15·#26)이 테이블·세션·인증 의존성을 계약대로 쓰는지 확인했습니다. 설계 결정과 검증 방법은 [DB·인증 기술 문서](docs/auth.md)에 정리했습니다.
 
 ## 백엔드 B 작업 요약
 
-권현석: 이슈 #9에 따라 대화방·대화 repository와 인증된 채팅/방 목록 API를 구현했습니다. 최근 성공 Q/A 5쌍으로 문맥을 구성하고 OpenRouter의 StreamLake 제공자만 호출합니다. 입력 검증, 전체 타임아웃, AI·DB 오류 응답, 요청 ID로 연결되는 이벤트 로그를 추가했습니다. 관련 자동 테스트와 실제 서버 확인 스크립트, 채팅 기술 문서를 작성했습니다. 2026-10-09 실제 AI 응답·후속 질문 문맥·PostgreSQL 저장까지 검증했습니다.
+권현석: 이슈 #9에 따라 대화방·대화 repository와 인증된 채팅/방 목록 API를 구현했습니다. 최근 성공 Q/A 5쌍으로 문맥을 구성하고, 초기 AI 연동은 OpenRouter의 StreamLake 제공자로 구현했습니다. 입력 검증, 전체 타임아웃, AI·DB 오류 응답, 요청 ID로 연결되는 이벤트 로그를 추가했습니다. 관련 자동 테스트와 실제 서버 확인 스크립트, 채팅 기술 문서를 작성했습니다. 2026-10-09 실제 AI 응답·후속 질문 문맥·PostgreSQL 저장까지 검증했습니다.

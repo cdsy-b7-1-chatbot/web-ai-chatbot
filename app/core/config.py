@@ -26,14 +26,12 @@ class Settings(BaseSettings):
     cors_origins: str = ""
 
     # 키가 없어도 인증·조회는 동작한다. 채팅 서비스가 호출 전에 확인한다.
-    openrouter_api_key: SecretStr | None = None
-    ai_model: str = Field(default="qwen/qwen3-30b-a3b-instruct-2507", min_length=1)
+    codyssey_api_key: SecretStr | None = None
+    ai_model: str = Field(default="gpt-5-mini", min_length=1)
     ai_timeout_seconds: float = Field(default=30, gt=0)
     ai_max_output_tokens: int = Field(default=1024, gt=0)
     chat_context_pairs: int = Field(default=5, gt=0)
     chat_max_question_length: int = Field(default=5000, gt=0)
-    openrouter_site_url: str | None = None
-    openrouter_site_name: str | None = None
 
     @property
     def cors_origin_list(self) -> list[str]:
