@@ -153,7 +153,23 @@
 .chat-messages[data-has-messages="false"] { display: none; }
 .chat-bubble { max-width: min(78%, 42rem); margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
 .chat-bubble[data-role="user"] { justify-self: end; padding: 0.7rem 0.95rem; border-radius: 1rem 1rem 0.25rem; background: var(--surface-subtle); line-height: 1.55; }
-.chat-bubble[data-role="assistant"] { max-width: min(100%, 46rem); color: var(--text); font-size: 0.975rem; line-height: 1.85; }
+.chat-bubble[data-role="assistant"] { max-width: min(100%, 46rem); color: var(--text); font-size: 0.975rem; line-height: 1.85; white-space: normal; }
+.chat-bubble[data-role="assistant"] > :first-child { margin-top: 0; }
+.chat-bubble[data-role="assistant"] > :last-child { margin-bottom: 0; }
+.chat-bubble[data-role="assistant"] h1,
+.chat-bubble[data-role="assistant"] h2,
+.chat-bubble[data-role="assistant"] h3,
+.chat-bubble[data-role="assistant"] h4 { margin: 1.35rem 0 0.55rem; line-height: 1.35; }
+.chat-bubble[data-role="assistant"] h1 { font-size: 1.45rem; }
+.chat-bubble[data-role="assistant"] h2 { font-size: 1.25rem; }
+.chat-bubble[data-role="assistant"] h3 { font-size: 1.075rem; }
+.chat-bubble[data-role="assistant"] ul,
+.chat-bubble[data-role="assistant"] ol { margin: 0.65rem 0; padding-left: 1.4rem; }
+.chat-bubble[data-role="assistant"] hr { margin: 1.25rem 0; border: 0; border-top: 1px solid var(--border); }
+.chat-bubble[data-role="assistant"] :not(pre) > code { padding: 0.1rem 0.3rem; border-radius: 0.25rem; background: var(--surface-subtle); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 0.9em; }
+.chat-bubble[data-role="assistant"] pre { overflow-x: auto; margin: 0.85rem 0; padding: 0.85rem 1rem; border-radius: 0.5rem; background: #2b2624; color: #fffaf5; white-space: pre; }
+.chat-bubble[data-role="assistant"] pre code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 0.875em; }
+.chat-bubble[data-role="assistant"] a { color: var(--primary-hover); text-decoration-thickness: 1px; }
 
 #load-more-history { justify-self: center; min-height: 2.25rem; margin-bottom: 0.5rem; padding: 0.4rem 0.75rem; border-color: var(--border); background: var(--surface); color: var(--muted); font-size: 0.8125rem; }
 .chat-content,

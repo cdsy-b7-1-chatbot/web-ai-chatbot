@@ -27,6 +27,16 @@ def test_frontend_entrypoint_is_served(frontend_client: TestClient) -> None:
     assert 'data-chat-api-mode="mock"' not in response.text
     assert 'data-health-api-mode="mock"' not in response.text
     assert 'get("apiMode") === "mock"' in response.text
+    assert 'src="https://cdn.jsdelivr.net/npm/marked@18.1.1/lib/marked.umd.js"' in response.text
+    assert 'src="https://cdn.jsdelivr.net/npm/dompurify@3.4.17/dist/purify.min.js"' in response.text
+    assert (
+        'integrity="sha384-rATToyt6602Jnq8c7w8HZwmyOUgPL7mzxX01FBWoV48ns/EgkakGozpES+PnaYOI"'
+        in response.text
+    )
+    assert (
+        'integrity="sha384-P0JNneQf81HOl9VwNXK76cQ9VMD6Nfsnepxb0cCOg8+UzEdzgPHAPV4wVQrvYQSx"'
+        in response.text
+    )
     assert (
         'name="description" content="질문하고, 이해하고, 정리하는 나만의 AI 챗봇"' in response.text
     )

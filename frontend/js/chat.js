@@ -1,4 +1,5 @@
 import { getChatHistory, sendChat } from "./api/api.js";
+import { renderAssistantMarkdown } from "./markdown.js";
 import { getRequestErrorMessage } from "./request-error.js";
 
 const HISTORY_PAGE_SIZE = 20;
@@ -73,10 +74,16 @@ export function initializeChat({
   }
 
   function appendBubble(role, text) {
-    const bubble = document.createElement("p");
+    // Markdown에는 제목·목록처럼 p 안에 둘 수 없는 블록 요소가 포함될 수 있다.
+    const bubble = document.createElement(role === "assistant" ? "div" : "p");
     bubble.className = "chat-bubble";
     bubble.dataset.role = role;
-    bubble.textContent = text;
+    const html = role === "assistant" ? renderAssistantMarkdown(text) : null;
+    if (html === null) {
+      bubble.textContent = text;
+    } else {
+      bubble.innerHTML = html;
+    }
     messages.append(bubble);
     setHasMessages(true);
   }
