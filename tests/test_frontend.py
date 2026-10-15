@@ -37,6 +37,15 @@ def test_frontend_entrypoint_is_served(frontend_client: TestClient) -> None:
         'integrity="sha384-P0JNneQf81HOl9VwNXK76cQ9VMD6Nfsnepxb0cCOg8+UzEdzgPHAPV4wVQrvYQSx"'
         in response.text
     )
+    assert (
+        'name="description" content="질문하고, 이해하고, 정리하는 나만의 AI 챗봇"' in response.text
+    )
+    assert 'property="og:title" content="Web AI Chatbot"' in response.text
+    assert (
+        'property="og:description" content="질문하고, 이해하고, 정리하는 나만의 AI 챗봇"'
+        in response.text
+    )
+    assert 'rel="icon" href="/static/favicon.svg" type="image/svg+xml"' in response.text
 
 
 @pytest.mark.parametrize(
@@ -47,6 +56,7 @@ def test_frontend_entrypoint_is_served(frontend_client: TestClient) -> None:
         ("/static/js/api/api.js", "text/javascript"),
         ("/static/js/api/mock.js", "text/javascript"),
         ("/static/js/api/real.js", "text/javascript"),
+        ("/static/favicon.svg", "image/svg+xml"),
     ],
 )
 def test_frontend_static_assets_are_served(
