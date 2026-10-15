@@ -8,6 +8,7 @@ Codyssey B7-1 팀 프로젝트입니다. FastAPI로 회원 인증, AI 질문·�
 - API 명세: https://web-ai-chatbot-33yw.onrender.com/docs
 - 이용 방법: 회원가입 → 로그인 → 질문 입력 → 같은 대화방에서 후속 질문
 - 배포 설정·재배포·DB 확인: [배포 가이드](docs/deployment.md)
+- 실제 화면·서버 로그·검증 결과: [배포 검증 증빙](docs/verification.md)
 
 무료 웹서비스는 한동안 요청이 없으면 쉬었다가 첫 접속 때 다시 시작하므로 응답이 늦어질 수 있습니다. 현재 무료 PostgreSQL 만료일은 **2026-11-14**입니다.
 
