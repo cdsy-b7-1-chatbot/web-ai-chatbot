@@ -7,6 +7,7 @@ class FakeElement {
     this.style = {};
     this.scrollHeight = 0;
     this.disabled = false;
+    this.innerHTML = "";
     this.textContent = "";
     this.value = "";
     this.children = [];
@@ -102,6 +103,76 @@ test("질문을 전송하면 사용자 질문과 AI 답변을 순서대로 표�
   assert.equal(chatDocument.elements["chat-submit"].disabled, false);
   assert.equal(chatDocument.elements["chat-messages"].dataset.hasMessages, "true");
   assert.equal(chatDocument.elements["chat-empty-state"].hidden, true);
+});
+
+test("AI 답변은 마크다운 변환 뒤 정화하고 사용자 질문은 일반 텍스트로 남긴다", async (t) => {
+  const originalMarked = globalThis.marked;
+  const originalDOMPurify = globalThis.DOMPurify;
+  t.after(() => {
+    globalThis.marked = originalMarked;
+    globalThis.DOMPurify = originalDOMPurify;
+  });
+
+  const parsed = [];
+  const sanitized = [];
+  globalThis.marked = {
+    parse: (text, options) => {
+      parsed.push({ text, options });
+      return `<h3>${text}</h3><img src=x onerror="console.log('xss-e2e')">`;
+    },
+  };
+  globalThis.DOMPurify = {
+    sanitize: (html, options) => {
+      sanitized.push({ html, options });
+      return "<h3>안전한 답변</h3>";
+    },
+  };
+
+  const chatDocument = createChatDocument();
+  globalThis.document = chatDocument;
+  initializeChat({
+    chatApi: {
+      sendChat: async () => ({ answer: "### 제목", conversation_id: 4, truncated: false }),
+    },
+  });
+
+  chatDocument.elements["chat-question"].value = "<img src=x onerror=alert(1)>";
+  await trigger(chatDocument.elements["chat-form"]);
+
+  const [question, answer] = chatDocument.elements["chat-messages"].children;
+  assert.equal(question.textContent, "<img src=x onerror=alert(1)>");
+  assert.equal(question.innerHTML, "");
+  assert.equal(answer.innerHTML, "<h3>안전한 답변</h3>");
+  assert.deepEqual(parsed, [{ text: "### 제목", options: { breaks: true, gfm: true } }]);
+  assert.equal(sanitized.length, 1);
+  assert.match(sanitized[0].html, /onerror/);
+  assert.deepEqual(sanitized[0].options, { USE_PROFILES: { html: true } });
+});
+
+test("기록에서 불러온 AI 답변도 마크다운 정화 경로를 거친다", async (t) => {
+  const originalMarked = globalThis.marked;
+  const originalDOMPurify = globalThis.DOMPurify;
+  t.after(() => {
+    globalThis.marked = originalMarked;
+    globalThis.DOMPurify = originalDOMPurify;
+  });
+
+  globalThis.marked = { parse: () => '<a href="javascript:console.log(\'xss-e2e\')">클릭</a>' };
+  globalThis.DOMPurify = { sanitize: () => '<a>클릭</a>' };
+  const chatDocument = createChatDocument();
+  globalThis.document = chatDocument;
+  const controller = initializeChat({
+    chatApi: {
+      getChatHistory: async () => ({
+        items: [{ id: 1, question: "기록 질문", answer: "[클릭](javascript:...)", status: "success", created_at: "2026-10-15T00:00:00Z" }],
+      }),
+    },
+    getConversationId: () => 1,
+  });
+
+  await controller.loadConversation(1);
+  assert.equal(chatDocument.elements["chat-messages"].children[0].textContent, "기록 질문");
+  assert.equal(chatDocument.elements["chat-messages"].children[1].innerHTML, "<a>클릭</a>");
 });
 
 test("첫 응답의 대화방 ID를 후속 질문에 사용하고 새 대화에서는 초기화한다", async () => {
