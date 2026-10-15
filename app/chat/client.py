@@ -1,4 +1,4 @@
-"""OpenRouter 호출 경계 — 제공자 설정·응답 해석을 채팅 로직에서 분리한다."""
+"""코디세이 OpenAI 호환 API 호출·응답 해석을 채팅 로직에서 분리한다."""
 
 import asyncio
 import logging
@@ -13,8 +13,8 @@ from app.chat.context import Message
 from app.core.config import Settings, get_settings
 from app.core.logging import log_event
 
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-PROVIDER = "streamlake"
+CODYSSEY_URL = "https://copa.codyssey.kr/v1/chat/completions"
+PROVIDER = "codyssey"
 logger = logging.getLogger(__name__)
 
 
@@ -63,7 +63,7 @@ class _Completion(BaseModel):
     error: object | None = None
 
 
-class OpenRouterClient:
+class CodysseyClient:
     def __init__(
         self, settings: Settings, *, transport: httpx.AsyncBaseTransport | None = None
     ) -> None:
@@ -71,23 +71,16 @@ class OpenRouterClient:
         self.transport = transport
 
     def ensure_configured(self) -> None:
-        key = self.settings.openrouter_api_key
+        key = self.settings.codyssey_api_key
         if key is None or not key.get_secret_value().strip():
             raise AIClientError("AI_NOT_CONFIGURED")
 
     def _headers(self) -> dict[str, str]:
         self.ensure_configured()
-        headers = {
-            "Authorization": f"Bearer {self.settings.openrouter_api_key.get_secret_value().strip()}",
+        return {
+            "Authorization": f"Bearer {self.settings.codyssey_api_key.get_secret_value().strip()}",
             "Content-Type": "application/json",
         }
-        for name, value in (
-            ("HTTP-Referer", self.settings.openrouter_site_url),
-            ("X-OpenRouter-Title", self.settings.openrouter_site_name),
-        ):
-            if value and value.strip():
-                headers[name] = value.strip()
-        return headers
 
     async def generate(self, messages: list[Message]) -> AIResult:
         self.ensure_configured()
@@ -134,13 +127,11 @@ class OpenRouterClient:
             "messages": messages,
             "stream": False,
             "max_tokens": self.settings.ai_max_output_tokens,
-            # 요청마다 명시해 OpenRouter의 기본 제공자 fallback을 차단한다.
-            "provider": {"only": [PROVIDER], "allow_fallbacks": False},
         }
         async with httpx.AsyncClient(
             timeout=self.settings.ai_timeout_seconds, transport=self.transport
         ) as http:
-            response = await http.post(OPENROUTER_URL, headers=self._headers(), json=payload)
+            response = await http.post(CODYSSEY_URL, headers=self._headers(), json=payload)
             response.raise_for_status()
         try:
             completion = _Completion.model_validate(response.json())
@@ -162,5 +153,5 @@ class OpenRouterClient:
         )
 
 
-def get_ai_client() -> OpenRouterClient:
-    return OpenRouterClient(get_settings())
+def get_ai_client() -> CodysseyClient:
+    return CodysseyClient(get_settings())

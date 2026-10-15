@@ -6,13 +6,13 @@ from fastapi import APIRouter, Depends
 
 from app.auth.dependencies import CurrentUser
 from app.chat import service
-from app.chat.client import OpenRouterClient, get_ai_client
+from app.chat.client import CodysseyClient, get_ai_client
 from app.chat.schemas import ChatRequest, ChatResponse, ConversationListResponse
 from app.core.errors import error_responses
 from app.db.database import SessionDep
 
 router = APIRouter(prefix="/api", tags=["채팅"])
-AIClientDep = Annotated[OpenRouterClient, Depends(get_ai_client)]
+AIClientDep = Annotated[CodysseyClient, Depends(get_ai_client)]
 
 
 @router.get("/conversations", responses=error_responses(401, 500))
