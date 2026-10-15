@@ -71,10 +71,12 @@ uv run ruff check
 uv run python scripts/smoke_chat.py --base-url http://127.0.0.1:8000
 ```
 
-가입 → 로그인 → 새 질문 → 같은 방에서 별명 기억 확인 → 방 목록 확인을 수행합니다. 출력에는 ID·검증 결과·요청 ID만 포함합니다. `--result <경로>`로 키·토큰 없는 JSON 증빙을 저장할 수 있습니다. 기록 내용은 `scripts/check_chat_logs.sql`로 사용자별 확인합니다.
+가입 → 로그인 → 새 질문 → 같은 방에서 별명 기억 확인 → 방 목록·기록 조회 → 로그아웃 후 401 → 재로그인 후 같은 기록 조회를 수행합니다. 기록의 사용자·대화방 ID, 질문·응답, 성공 상태와 생성 시각을 확인합니다. 기존 AI 호출 2회에 조회·인증 검사만 추가하며, 실행을 마치면 로그아웃합니다.
+
+출력에는 ID·검증 결과·요청 ID만 포함합니다. `--result <경로>`로 키·토큰 없는 JSON 증빙을 저장할 수 있습니다. `history_verified`, `logout_verified`, `relogin_history_verified`는 API 검증 결과이며, 브라우저의 목록 표시와 서비스 재시작 후 기록 유지는 별도로 확인합니다. 기록 내용은 `scripts/check_chat_logs.sql`로 사용자별 확인합니다.
 
 초기 OpenRouter 구현의 2026-10-09 검증: SQLite 213 passed·2 skipped(PostgreSQL 전용), PostgreSQL 215 passed, Ruff 통과. 실제 서버에서 가입·로그인 → StreamLake 지정 OpenRouter 응답 → 같은 방의 후속 질문에서 별명 기억 → 대화방 목록 확인을 통과했습니다. 두 성공 기록의 사용자·방·모델·토큰·AI 소요 시간이 PostgreSQL에 저장된 것을 직접 조회했습니다. AI 실패의 502 응답·실패 기록 저장, 확인용 SQL 실행, PostgreSQL·앱 재시작 후 기록 유지도 확인했습니다. 처음 발생한 HTTP 402는 계정 크레딧 충전 후 해결되었습니다. 이 기록은 코디세이 전환 이후의 검증 결과와 구분합니다.
 
-2026-10-15 코디세이 전환 검증: SQLite 247 passed·2 skipped(PostgreSQL 전용), JavaScript 46 passed, Ruff 통과. 실제 코디세이 `gpt-5-mini` 호출과 격리한 SQLite DB를 사용해 FastAPI TestClient에서 가입·쿠키 로그인 → 새 질문 → 후속 질문의 별명 기억 → 방 목록·기록 조회를 확인했습니다. 두 성공 기록에 사용자·대화방·모델·토큰·AI 소요 시간이 저장됐고, 로그아웃 후 기록 조회는 401, 앱 인스턴스를 새로 만든 뒤 로그인하면 두 기록을 다시 조회했습니다. 필수 이벤트 로그도 확인했습니다. 코디세이 전환 이후의 운영 PostgreSQL과 외부 배포 URL 검증은 별도로 진행합니다.
+2026-10-15 코디세이 전환 검증: SQLite 247 passed·2 skipped(PostgreSQL 전용), JavaScript 46 passed, Ruff 통과. 실제 코디세이 `gpt-5-mini` 호출과 격리한 SQLite DB를 사용해 FastAPI TestClient에서 가입·쿠키 로그인 → 새 질문 → 후속 질문의 별명 기억 → 방 목록·기록 조회를 확인했습니다. 두 성공 기록에 사용자·대화방·모델·토큰·AI 소요 시간이 저장됐고, 로그아웃 후 기록 조회는 401, 앱 인스턴스를 새로 만든 뒤 로그인하면 두 기록을 다시 조회했습니다. 필수 이벤트 로그도 확인했습니다. 이후 운영 PostgreSQL·외부 URL·재로그인 검증과 최신 자동 테스트 결과는 [배포 검증 증빙](verification.md)에 정리했습니다.
 
 첫 버전은 RAG·스트리밍·대화 삭제·중복 요청 방지를 포함하지 않습니다.

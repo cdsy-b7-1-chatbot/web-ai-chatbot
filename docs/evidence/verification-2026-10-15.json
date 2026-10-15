@@ -1,0 +1,68 @@
+{
+  "service_url": "https://web-ai-chatbot-33yw.onrender.com",
+  "verification_date": "2026-10-15",
+  "initial_real_ai_check": {
+    "completed_at": "2026-10-15T07:38:50.256868+00:00",
+    "deployed_commit": "e4bb43e51d074032bb20b0b96ece408f7f3bca7c",
+    "provider": "codyssey",
+    "model": "gemini-3.1-flash-lite",
+    "actual_ai_calls": 2,
+    "context_verified": true,
+    "browser_question_answer_verified": true,
+    "history_rows": 2,
+    "history_rows_after_service_restart": 2,
+    "relogin_after_restart": true,
+    "verified_log_events": [
+      "request_received",
+      "ai_call_start",
+      "ai_call_success",
+      "db_save_success",
+      "request_completed"
+    ],
+    "request_ids": [
+      "0006a9303b04",
+      "58712a9fa7ce"
+    ]
+  },
+  "redeployment": {
+    "state": "Deploy succeeded | Live",
+    "commit": "69f642bbeb0a7ca024cc199f27294065dff1e678",
+    "http": {
+      "verified_at_utc": "2026-10-15T08:39:32.952125+00:00",
+      "main_commit": "69f642bbeb0a7ca024cc199f27294065dff1e678",
+      "health_status": 200,
+      "docs_status": 200,
+      "root_status": 200,
+      "frontend_matches_tested_commit": true,
+      "unauthenticated_history_status": 401,
+      "unauthenticated_chat_status": 401,
+      "stored_records": 2,
+      "previous_record_ids_retained": true,
+      "own_records_only": true,
+      "existing_context_answer_retained": true,
+      "after_logout_history_status": 401
+    },
+    "browser": {
+      "page_reloaded_during_relogin": false,
+      "first_login_rooms": 1,
+      "relogin_rooms": 1,
+      "same_room_restored": true,
+      "saved_context_answer_visible": true,
+      "history_loaded_after_relogin": true
+    },
+    "new_real_ai_calls": 0
+  },
+  "automated_tests": {
+    "python_passed": 253,
+    "python_skipped": 2,
+    "javascript_passed": 48,
+    "ruff_check": "passed",
+    "ruff_format_check": "passed",
+    "smoke_script_tests": 6,
+    "smoke_script_test_environment": "real FastAPI/auth with isolated SQLite and mock AI; no production database or real AI calls"
+  },
+  "files": {
+    "screenshot": "relogin-history.jpg",
+    "server_log": "ai-chat-events.log"
+  }
+}
