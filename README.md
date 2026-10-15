@@ -80,7 +80,7 @@ Python 버전과 패키지 버전은 [uv](https://docs.astral.sh/uv/) 로 맞춥
 
 | 이름 | 설명 | 기본값 |
 |---|---|---|
-| `LOG_LEVEL` | 서버 로그 레벨 (`DEBUG` / `INFO` / `WARNING` / `ERROR`). 화면 정적 파일(`/static/`) 요청 로그는 `DEBUG` 에서만 보인다(실패는 `INFO`) | `INFO` |
+| `LOG_LEVEL` | 서버 로그 레벨 (`DEBUG` / `INFO` / `WARNING` / `ERROR`). 화면 정적 파일(`/static/`)·배포 헬스 체크(`/api/health`) 요청 로그는 `DEBUG` 에서만 보인다(실패는 `INFO`) | `INFO` |
 | `DATABASE_URL` | Postgres 주소. 로컬은 Docker Postgres(`.env.example` 값) 또는 개인 Render Postgres, 배포는 Render Postgres | 없음 — 비어 있으면 서버가 시작하지 않음 |
 | `JWT_SECRET` | 로그인 토큰 서명 키(32바이트 이상). 배포에는 `uv run python -c "import secrets; print(secrets.token_urlsafe(32))"` 로 새로 만든 값을 넣는다. 바꾸면 기존 토큰이 전부 무효가 된다 | 없음 — 비어 있거나 짧으면 서버가 시작하지 않음 |
 | `JWT_EXPIRE_MINUTES` | 로그인 유지 시간(분). 지나면 401 → 다시 로그인 | `60` |
@@ -102,7 +102,7 @@ Python 버전과 패키지 버전은 [uv](https://docs.astral.sh/uv/) 로 맞춥
 
 ## 백엔드 A 작업 요약
 
-이상우: 이슈 #1·#2에 따라 공통 기반과 DB·인증을 구현했습니다. 공통 기반은 `{error, message}` 오류 형식과 전역 예외 처리, 요청마다 `request_id`가 붙는 서버 로그, `/docs` API 명세, uv 기반 맥·Windows 개발 환경입니다(#4). DB는 users·conversations·chats 테이블 모델과 PostgreSQL 연결·세션을 만들었습니다(#6). 인증은 Argon2id 비밀번호 해시와 JWT HttpOnly 쿠키로 회원가입·로그인·로그아웃·로그인 사용자 확인(`CurrentUser`)을 구현하고, 요청 로그에 로그인 사용자의 `user_id`를 남기게 했습니다(#7). 이후 화면 정적 파일 요청 로그를 DEBUG로 낮췄습니다(#28). 팀 협업 가이드와 이슈·PR 템플릿을 작성했고(#5), B·PM·FE의 PR(#12·#15·#26)이 테이블·세션·인증 의존성을 계약대로 쓰는지 확인했습니다. 설계 결정과 검증 방법은 [DB·인증 기술 문서](docs/auth.md)에 정리했습니다.
+이상우: 이슈 #1·#2에 따라 공통 기반과 DB·인증을 구현했습니다. 공통 기반은 `{error, message}` 오류 형식과 전역 예외 처리, 요청마다 `request_id`가 붙는 서버 로그, `/docs` API 명세, uv 기반 맥·Windows 개발 환경입니다(#4). DB는 users·conversations·chats 테이블 모델과 PostgreSQL 연결·세션을 만들었습니다(#6). 인증은 Argon2id 비밀번호 해시와 JWT HttpOnly 쿠키로 회원가입·로그인·로그아웃·로그인 사용자 확인(`CurrentUser`)을 구현하고, 요청 로그에 로그인 사용자의 `user_id`를 남기게 했습니다(#7). 이후 화면 정적 파일(#28)과 배포 헬스 체크(#35) 요청 로그를 DEBUG로 낮췄습니다. 팀 협업 가이드와 이슈·PR 템플릿을 작성했고(#5), B·PM·FE의 PR(#12·#15·#26)이 테이블·세션·인증 의존성을 계약대로 쓰는지 확인했습니다. 설계 결정과 검증 방법은 [DB·인증 기술 문서](docs/auth.md)에 정리했습니다.
 
 ## 백엔드 B 작업 요약
 
